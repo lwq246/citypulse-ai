@@ -58,7 +58,12 @@ export default function Dashboard() {
     <main className="relative w-full h-screen overflow-hidden bg-[#0B1211] text-white font-sans">
       {/* Map Layer */}
       <div className="absolute inset-0 z-0">
-        <MapBox activeLayer={activeLayer} targetLocation={targetLocation} />
+        <MapBox
+          activeLayer={activeLayer}
+          targetLocation={targetLocation}
+          // This connects the click event to your state
+          onMapClick={setTargetLocation}
+        />
       </div>
 
       {/* Top UI */}
