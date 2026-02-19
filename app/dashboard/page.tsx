@@ -7,7 +7,7 @@ import SearchBar from "@/components/SearchBar";
 import Sidebar from "@/components/Sidebar";
 import StatusWidgets from "@/components/StatusWidgets";
 import { LocateFixed } from "lucide-react"; // Import the icon for the button
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Dashboard() {
   const [activeLayer, setActiveLayer] = useState("thermal");
@@ -54,6 +54,85 @@ export default function Dashboard() {
     }
   };
 
+  const fetchGoogleWeather = async (lat: number, lng: number) => {
+    const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    // Note: Ensure the API name in the URL matches the latest Google documentation
+    const url = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${API_KEY}`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: {
+            latitude: lat,
+            longitude: lng,
+          },
+          units: "METRIC", // Get Celsius
+          languageCode: "en",
+        }),
+      });
+
+      const data = await response.json();
+
+      // Google returns temperature and weather descriptions (e.g., "Clear", "Cloudy")
+      return {
+        temp: data.temperature.value,
+        condition: data.condition.text,
+        icon: data.condition.icon, // Google provides an icon URL too!
+      };
+    } catch (error) {
+      console.error("Google Weather Error:", error);
+      return { temp: 32, condition: "Sunny" }; // Fallback
+    }
+  };
+
+  // 1. CREATE A REF TO HOLD THE MAP INSTANCE
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+
+  // 2. DEFINE CONTROL FUNCTIONS
+  const handleZoomIn = () => {
+    if (mapInstanceRef.current) {
+      const currentZoom = mapInstanceRef.current.getZoom() || 17;
+      mapInstanceRef.current.setZoom(currentZoom + 1);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (mapInstanceRef.current) {
+      const currentZoom = mapInstanceRef.current.getZoom() || 17;
+      mapInstanceRef.current.setZoom(currentZoom - 1);
+    }
+  };
+
+  const handleTilt = () => {
+    if (mapInstanceRef.current) {
+      // Toggle between 0 (flat) and 45 (3D)
+      const currentTilt = mapInstanceRef.current.getTilt();
+      mapInstanceRef.current.setTilt(currentTilt === 45 ? 0 : 45);
+    }
+  };
+
+  const handleReset = () => {
+    if (mapInstanceRef.current) {
+      // Reset to North (Heading 0) and Tilt 45
+      mapInstanceRef.current.moveCamera({
+        heading: 0,
+        tilt: 45,
+      });
+    }
+  };
+
+  const handleRotate = () => {
+    if (mapInstanceRef.current) {
+      const currentHeading = mapInstanceRef.current.getHeading() || 0;
+      // Rotate 90 degrees clockwise
+      const newHeading = currentHeading + 90;
+
+      mapInstanceRef.current.setHeading(newHeading);
+    }
+  };
+
   return (
     <main className="relative w-full h-screen overflow-hidden bg-[#0B1211] text-white font-sans">
       {/* Map Layer */}
@@ -61,8 +140,11 @@ export default function Dashboard() {
         <MapBox
           activeLayer={activeLayer}
           targetLocation={targetLocation}
-          // This connects the click event to your state
           onMapClick={setTargetLocation}
+          // 3. CAPTURE THE MAP INSTANCE
+          onMapLoad={(map) => {
+            mapInstanceRef.current = map;
+          }}
         />
       </div>
 
@@ -94,7 +176,10 @@ export default function Dashboard() {
         <div className="relative w-64 h-64 border border-[#06D6A0]/20 rounded-full flex items-center justify-center animate-pulse">
           <div className="w-2 h-2 bg-[#06D6A0] rounded-full shadow-[0_0_15px_#06D6A0]" />
           <div className="absolute top-full mt-4 pointer-events-auto">
-            <LocationPopup locationName={targetLocation.name} />
+            <LocationPopup
+              locationName={targetLocation.name}
+              activeLayer={activeLayer} // Pass this!
+            />
           </div>
         </div>
       </div>
@@ -108,11 +193,16 @@ export default function Dashboard() {
           </span>
         </div>
 
-        {/* 4. UPDATED MAP CONTROLS AREA */}
         <div className="pointer-events-auto flex gap-4">
-          <MapControls />
+          {/* 4. PASS FUNCTIONS TO CONTROLS */}
+          <MapControls
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onTilt={handleTilt}
+            onRotate={handleRotate} // <--- Connect it here
+            onReset={handleReset}
+          />
 
-          {/* NEW: My Location Button */}
           <button
             onClick={handleLocateMe}
             className="bg-[#141E1C]/80 backdrop-blur-md border border-white/10 p-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-[#06D6A0] transition-colors group"

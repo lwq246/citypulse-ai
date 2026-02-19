@@ -9,10 +9,16 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.2.8",
+    "@deck.gl/google-maps": "^9.2.8",
     "@googlemaps/js-api-loader": "^2.0.2",
+    "clsx": "^2.1.1",
+    "deck.gl": "^9.2.8",
+    "lucide-react": "^0.574.0",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
