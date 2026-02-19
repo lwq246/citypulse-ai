@@ -24,7 +24,7 @@ export default function MapBox({
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const overlayRef = useRef<GoogleMapsOverlay | null>(null);
 
-  // 1. STABLE DATA: Memoize both Heat and Solar data
+  // 1. DATA GENERATION (Memoized for performance)
   const heatData = useMemo(() => {
     return generateHeatmapData(targetLocation.lat, targetLocation.lng);
   }, [
@@ -40,6 +40,13 @@ export default function MapBox({
   ]);
 
   const [zoom, setZoom] = useState(17);
+
+  // PULSE ANIMATION TRIGGER
+  const [timer, setTimer] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTimer((t) => t + 1), 100);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const initMap = async () => {
@@ -75,9 +82,7 @@ export default function MapBox({
 
           instance.addListener("zoom_changed", () => {
             const z = instance.getZoom();
-            if (z && Math.abs(z - zoom) > 0.5) {
-              setZoom(Math.round(z));
-            }
+            if (z && Math.abs(z - zoom) > 0.5) setZoom(Math.round(z));
           });
 
           const overlay = new GoogleMapsOverlay({ layers: [] });
@@ -96,27 +101,19 @@ export default function MapBox({
             geocoder.geocode({ location: { lat, lng } }, (results, status) => {
               if (status === "OK" && results && results[0] && onMapClick) {
                 const components = results[0].address_components;
-
-                // Smart Naming Logic (Malaysia-Proof)
                 const poi = components.find(
                   (c) =>
-                    (c.types.includes("point_of_interest") ||
-                      c.types.includes("establishment")) &&
-                    !c.types.includes("political"),
+                    c.types.includes("point_of_interest") ||
+                    c.types.includes("establishment"),
                 );
                 const route = components.find((c) => c.types.includes("route"));
 
-                let locationName = "Selected Area";
-                if (poi) locationName = poi.long_name;
-                else if (route) locationName = route.long_name;
-                else {
-                  const parts = results[0].formatted_address.split(",");
-                  locationName = isNaN(Number(parts[0]))
-                    ? parts[0]
-                    : parts[1]?.trim() || parts[0];
-                }
-
-                onMapClick({ lat, lng, name: locationName });
+                let name = poi
+                  ? poi.long_name
+                  : route
+                    ? route.long_name
+                    : results[0].formatted_address.split(",")[0];
+                onMapClick({ lat, lng, name });
               }
             });
           });
@@ -128,13 +125,13 @@ export default function MapBox({
     initMap();
   }, []);
 
-  // 3. LAYER ENGINE: Handles Switching and Dynamic Visuals
+  // 3. LAYER RENDER ENGINE
   useEffect(() => {
     if (!overlayRef.current) return;
 
     const layers: any[] = [];
 
-    // THERMAL LAYER (Heatmap)
+    // --- THERMAL MODE ---
     if (activeLayer === "thermal") {
       layers.push(
         new HeatmapLayer({
@@ -142,8 +139,8 @@ export default function MapBox({
           data: heatData,
           getPosition: (d: any) => [d.lng, d.lat],
           getWeight: (d: any) => d.weight,
-          radiusPixels: Math.pow(1.55, zoom - 10) * 15,
-          intensity: 1.5,
+          radiusPixels: Math.pow(1.5, zoom - 10) * 12,
+          intensity: 0.8,
           threshold: 0.05,
           aggregation: "SUM",
           colorRange: [
@@ -154,33 +151,54 @@ export default function MapBox({
             [253, 187, 132],
             [227, 74, 51],
           ],
-          opacity: 0.5,
+          opacity: 0.4,
         }),
       );
     }
 
-    // SOLAR LAYER (Scatterplot circles on roofs)
+    // --- SOLAR MODE ---
     if (activeLayer === "solar") {
       layers.push(
         new ScatterplotLayer({
           id: "solar-layer",
           data: solarData,
           getPosition: (d: any) => [d.lng, d.lat],
-          // Gold color with high opacity
-          getFillColor: [255, 191, 0, 200],
-          // Scale size with zoom so they look like building markers
-          getRadius: zoom > 17 ? 15 : 30,
+
+          // --- DYNAMIC COLOR LOGIC ---
+          // d.weight is a value from 0 to 1.
+          // We map 0 to Deep Amber [180, 100, 0]
+          // We map 1 to Bright Gold [255, 240, 50]
+          getFillColor: (d: any) => {
+            const w = d.weight || 0.5;
+            return [
+              255, // Red
+              Math.floor(100 + 140 * w), // Green (Increases for brightness)
+              Math.floor(w * 50), // Blue (Small amount for "white" glow)
+              220, // Opacity
+            ];
+          },
+
+          getRadius: zoom > 17 ? 12 : 25,
+          radiusScale: 1 + Math.sin(timer / 5) * 0.1,
           pickable: true,
           stroked: true,
           lineWidthMinPixels: 2,
-          getLineColor: [255, 255, 255, 150], // White border
+
+          // Border color also gets brighter for high potential
+          getLineColor: (d: any) => [255, 255, 255, d.weight > 0.8 ? 200 : 80],
+
+          updateTriggers: {
+            radiusScale: [timer],
+            getFillColor: [solarData], // Redraw if data changes
+          },
         }),
       );
     }
 
     overlayRef.current.setProps({ layers });
-  }, [activeLayer, heatData, solarData, zoom]);
+  }, [activeLayer, heatData, solarData, zoom, timer]); // Added timer to dependency
 
+  // Fly-to animation when location changes
   useEffect(() => {
     if (mapInstanceRef.current && targetLocation) {
       mapInstanceRef.current.moveCamera({
