@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=600x400&location=${lat},${lng}&fov=90&key=${MAPS_KEY}`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     const prompt = `
       Analyze this Street View image of ${locationName}. Act as an Urban Designer.
