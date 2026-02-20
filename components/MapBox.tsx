@@ -7,6 +7,7 @@ import { GoogleMapsOverlay } from "@deck.gl/google-maps";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import { useEffect, useMemo, useRef, useState } from "react";
+
 interface MapBoxProps {
   activeLayer: string;
   targetLocation: { lat: number; lng: number; name?: string };
@@ -24,7 +25,7 @@ export default function MapBox({
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const overlayRef = useRef<GoogleMapsOverlay | null>(null);
 
-  // 1. DATA GENERATION (Memoized for performance)
+  // 1. DATA GENERATION (Memoized to prevent calculation lag)
   const heatData = useMemo(() => {
     return generateHeatmapData(targetLocation.lat, targetLocation.lng);
   }, [
@@ -48,18 +49,19 @@ export default function MapBox({
 
   const [zoom, setZoom] = useState(17);
 
-  // PULSE ANIMATION TRIGGER
+  // PULSE ANIMATION TIMER
   const [timer, setTimer] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => setTimer((t) => t + 1), 100);
     return () => clearInterval(interval);
   }, []);
 
+  // 2. INITIALIZE MAP & OVERLAY
   useEffect(() => {
     const initMap = async () => {
       setOptions({
         key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
-        version: "weekly",
+        version: "3.58", // Use a stable version to prevent breaking changes
       } as any);
 
       try {
@@ -87,25 +89,20 @@ export default function MapBox({
 
           mapInstanceRef.current = instance;
 
+          // Throttled Zoom Listener
           instance.addListener("zoom_changed", () => {
             const z = instance.getZoom();
-            if (z && Math.abs(z - zoom) > 0.5) setZoom(Math.round(z));
+            if (z && Math.abs(z - zoom) > 0.3) setZoom(z);
           });
 
-          // Inside MapBox.tsx -> initMap function
-
+          // --- THE STABILITY FIX: interleaved: false ---
+          // This stops the 'drawBuffers' error by giving Deck.gl its own canvas.
           const overlay = new GoogleMapsOverlay({
             layers: [],
-            // 1. This helps sync the resolution between Deck.gl and Google Maps
+            interleaved: false,
             useDevicePixels: true,
-
-            // 2. We cast to 'any' to bypass the strict TypeScript check
-            // This allows 'depthTest' and 'blend' to reach the GPU driver
-            parameters: {
-              depthTest: true,
-              blend: true,
-            } as any,
           });
+
           overlay.setMap(instance);
           overlayRef.current = overlay;
 
@@ -127,7 +124,6 @@ export default function MapBox({
                     c.types.includes("establishment"),
                 );
                 const route = components.find((c) => c.types.includes("route"));
-
                 let name = poi
                   ? poi.long_name
                   : route
@@ -142,16 +138,28 @@ export default function MapBox({
         console.error("Error loading Google Maps:", error);
       }
     };
+
     initMap();
+
+    // CLEANUP: Essential to prevent lag over time
+    return () => {
+      if (overlayRef.current) {
+        overlayRef.current.setMap(null);
+        overlayRef.current = null;
+      }
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current = null;
+      }
+    };
   }, []);
 
-  // 3. LAYER RENDER ENGINE
+  // 3. THE LAYER ENGINE (Renders based on sidebar choice)
   useEffect(() => {
     if (!overlayRef.current) return;
 
     const layers: any[] = [];
 
-    // --- THERMAL MODE ---
+    // --- THERMAL LAYER ---
     if (activeLayer === "thermal") {
       layers.push(
         new HeatmapLayer({
@@ -176,44 +184,32 @@ export default function MapBox({
       );
     }
 
-    // --- SOLAR MODE ---
+    // --- SOLAR LAYER ---
     if (activeLayer === "solar") {
       layers.push(
         new ScatterplotLayer({
           id: "solar-layer",
           data: solarData,
           getPosition: (d: any) => [d.lng, d.lat],
-
-          // --- DYNAMIC COLOR LOGIC ---
-          // d.weight is a value from 0 to 1.
-          // We map 0 to Deep Amber [180, 100, 0]
-          // We map 1 to Bright Gold [255, 240, 50]
           getFillColor: (d: any) => {
             const w = d.weight || 0.5;
-            return [
-              255, // Red
-              Math.floor(100 + 140 * w), // Green (Increases for brightness)
-              Math.floor(w * 50), // Blue (Small amount for "white" glow)
-              220, // Opacity
-            ];
+            return [255, Math.floor(100 + 140 * w), Math.floor(w * 50), 220];
           },
-
           getRadius: zoom > 17 ? 12 : 25,
           radiusScale: 1 + Math.sin(timer / 5) * 0.1,
           pickable: true,
           stroked: true,
           lineWidthMinPixels: 2,
-
-          // Border color also gets brighter for high potential
-          getLineColor: (d: any) => [255, 255, 255, d.weight > 0.8 ? 200 : 80],
-
+          getLineColor: [255, 255, 255, 150],
           updateTriggers: {
             radiusScale: [timer],
-            getFillColor: [solarData], // Redraw if data changes
+            getFillColor: [solarData],
           },
         }),
       );
     }
+
+    // --- FLOOD LAYER ---
     if (activeLayer === "flood") {
       layers.push(
         new HeatmapLayer({
@@ -223,16 +219,14 @@ export default function MapBox({
           getWeight: (d: any) => d.weight,
           radiusPixels: Math.pow(1.5, zoom - 10) * 15,
           intensity: 1.5,
-          // Increase threshold to 0.1 to cut off the messy "dark" edges
           threshold: 0.1,
           aggregation: "SUM",
-          // NEW COLOR RANGE: Cyan -> Sky Blue -> Deep Blue (No black/dark indigo)
           colorRange: [
-            [150, 230, 255], // Very Light Blue (Edges)
+            [150, 230, 255],
             [100, 200, 255],
             [50, 150, 255],
             [20, 100, 230],
-            [0, 60, 180], // Deep Blue (Core/Deepest)
+            [0, 60, 180],
           ],
           opacity: 0.5,
         }),
@@ -240,9 +234,9 @@ export default function MapBox({
     }
 
     overlayRef.current.setProps({ layers });
-  }, [activeLayer, heatData, solarData, zoom, timer]); // Added timer to dependency
+  }, [activeLayer, heatData, solarData, floodData, zoom, timer]);
 
-  // Fly-to animation when location changes
+  // Handle Camera Movement
   useEffect(() => {
     if (mapInstanceRef.current && targetLocation) {
       mapInstanceRef.current.moveCamera({
@@ -253,5 +247,10 @@ export default function MapBox({
     }
   }, [targetLocation]);
 
-  return <div ref={mapRef} className="w-full h-full brightness-[0.8]" />;
+  return (
+    <div
+      ref={mapRef}
+      className="w-full h-full grayscale-[0.1] brightness-[0.7] contrast-[1.1]"
+    />
+  );
 }
