@@ -1,14 +1,15 @@
 "use client";
 
+import AIAnalysisPanel from "@/components/AIAnalysisPanel";
 import LocationPopup from "@/components/LocationPopup";
 import MapBox from "@/components/MapBox";
 import MapControls from "@/components/MapControls";
 import SearchBar from "@/components/SearchBar";
 import Sidebar from "@/components/Sidebar";
 import StatusWidgets from "@/components/StatusWidgets";
+import { AnimatePresence } from "framer-motion";
 import { LocateFixed } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
 export default function Dashboard() {
   const [activeLayer, setActiveLayer] = useState("thermal");
 
@@ -33,6 +34,12 @@ export default function Dashboard() {
     savings: 0,
     potential: "Analyzing...",
     source: "Initializing...",
+  });
+
+  const [floodData, setFloodData] = useState({
+    elevation: "0",
+    riskLevel: "Analyzing...",
+    estDepth: "0.0m",
   });
 
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -83,6 +90,19 @@ export default function Dashboard() {
     }
   };
 
+  const fetchFloodData = async (lat: number, lng: number) => {
+    try {
+      const res = await fetch("/api/flood", {
+        method: "POST",
+        body: JSON.stringify({ lat, lng }),
+      });
+      const data = await res.json();
+      setFloodData(data);
+    } catch (e) {
+      console.error("Flood API Error", e);
+    }
+  };
+
   // --- EFFECTS ---
 
   // Effect 1: Initial Geolocation (Runs once)
@@ -107,6 +127,7 @@ export default function Dashboard() {
     if (targetLocation.lat && targetLocation.lng) {
       fetchEnvironmentalData(targetLocation.lat, targetLocation.lng);
       fetchSolarInsights(targetLocation.lat, targetLocation.lng);
+      fetchFloodData(targetLocation.lat, targetLocation.lng); // <--- ADD THIS
     }
   }, [targetLocation]);
 
@@ -160,14 +181,36 @@ export default function Dashboard() {
     }
   };
 
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState<any>(null);
+
+  const runAIAnalysis = async () => {
+    setIsAnalyzing(true);
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        body: JSON.stringify({
+          lat: targetLocation.lat,
+          lng: targetLocation.lng,
+          locationName: targetLocation.name,
+        }),
+      });
+      const data = await res.json();
+      setAiResult(data);
+    } catch (e) {
+      console.error("AI Error", e);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <main className="relative w-full h-screen overflow-hidden bg-[#0B1211] text-white font-sans">
-      {/* 1. THE MAP LAYER */}
+      {/* LAYER 0: THE MAP (Background) */}
       <div className="absolute inset-0 z-0">
         <MapBox
           activeLayer={activeLayer}
           targetLocation={targetLocation}
-          // When map is clicked, the state updates, which triggers Effect 2
           onMapClick={(loc) => setTargetLocation(loc)}
           onMapLoad={(map) => {
             mapInstanceRef.current = map;
@@ -175,7 +218,8 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* 2. TOP UI LAYER */}
+      {/* LAYER 1: TOP HUD (Sidebar, Search, Status) */}
+      {/* This layer is just for the items at the top edge */}
       <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
         <div className="pointer-events-auto">
           <Sidebar activeLayer={activeLayer} setActiveLayer={setActiveLayer} />
@@ -202,6 +246,21 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* LAYER 2: AI ANALYSIS SIDEBAR (Fixed Right) */}
+      {/* By putting it here, it slides over everything else without moving the SearchBar */}
+      <AnimatePresence>
+        {aiResult && (
+          <AIAnalysisPanel
+            data={aiResult}
+            locationName={targetLocation.name}
+            lat={targetLocation.lat}
+            lng={targetLocation.lng}
+            onClose={() => setAiResult(null)}
+            activeLayer={activeLayer}
+          />
+        )}
+      </AnimatePresence>
+
       {/* 3. CENTER POPUP LAYER */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
         {/* This container is exactly at the dead center of the screen */}
@@ -219,6 +278,9 @@ export default function Dashboard() {
               activeLayer={activeLayer}
               envData={envData}
               solarData={solarData}
+              floodData={floodData}
+              onAnalyze={runAIAnalysis} // <--- PASS THIS
+              isAnalyzing={isAnalyzing} // <--- PASS THIS
             />
           </div>
         </div>
@@ -256,13 +318,19 @@ export default function Dashboard() {
         {/* Intensity Legend */}
         <div className="bg-[#141E1C]/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl pointer-events-auto shadow-2xl">
           <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2 font-bold">
-            {activeLayer === "solar" ? "Solar Potential" : "Thermal Intensity"}
+            {activeLayer === "solar"
+              ? "Solar Potential"
+              : activeLayer === "flood"
+                ? "Flood Vulnerability"
+                : "Thermal Intensity"}
           </p>
           <div
-            className={`w-48 h-2 rounded-full ${
+            className={`w-48 h-2 rounded-full transition-all duration-500 ${
               activeLayer === "solar"
                 ? "bg-gradient-to-r from-amber-900 via-yellow-500 to-yellow-200"
-                : "bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500"
+                : activeLayer === "flood"
+                  ? "bg-gradient-to-r from-cyan-300 via-blue-500 to-indigo-900"
+                  : "bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500"
             }`}
           />
           <div className="flex justify-between text-[8px] mt-1 text-gray-500 font-bold uppercase tracking-tighter">

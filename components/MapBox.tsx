@@ -1,4 +1,5 @@
 "use client";
+import { generateFloodData } from "@/utils/mockFloodData";
 import { generateHeatmapData } from "@/utils/mockHeatmapData";
 import { generateSolarData } from "@/utils/mockSolarData";
 import { HeatmapLayer } from "@deck.gl/aggregation-layers";
@@ -6,7 +7,6 @@ import { GoogleMapsOverlay } from "@deck.gl/google-maps";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import { useEffect, useMemo, useRef, useState } from "react";
-
 interface MapBoxProps {
   activeLayer: string;
   targetLocation: { lat: number; lng: number; name?: string };
@@ -34,6 +34,13 @@ export default function MapBox({
 
   const solarData = useMemo(() => {
     return generateSolarData(targetLocation.lat, targetLocation.lng);
+  }, [
+    Math.round(targetLocation.lat * 100),
+    Math.round(targetLocation.lng * 100),
+  ]);
+
+  const floodData = useMemo(() => {
+    return generateFloodData(targetLocation.lat, targetLocation.lng);
   }, [
     Math.round(targetLocation.lat * 100),
     Math.round(targetLocation.lng * 100),
@@ -85,7 +92,20 @@ export default function MapBox({
             if (z && Math.abs(z - zoom) > 0.5) setZoom(Math.round(z));
           });
 
-          const overlay = new GoogleMapsOverlay({ layers: [] });
+          // Inside MapBox.tsx -> initMap function
+
+          const overlay = new GoogleMapsOverlay({
+            layers: [],
+            // 1. This helps sync the resolution between Deck.gl and Google Maps
+            useDevicePixels: true,
+
+            // 2. We cast to 'any' to bypass the strict TypeScript check
+            // This allows 'depthTest' and 'blend' to reach the GPU driver
+            parameters: {
+              depthTest: true,
+              blend: true,
+            } as any,
+          });
           overlay.setMap(instance);
           overlayRef.current = overlay;
 
@@ -139,8 +159,8 @@ export default function MapBox({
           data: heatData,
           getPosition: (d: any) => [d.lng, d.lat],
           getWeight: (d: any) => d.weight,
-          radiusPixels: Math.pow(1.5, zoom - 10) * 12,
-          intensity: 0.8,
+          radiusPixels: Math.pow(1.6, zoom - 10) * 12,
+          intensity: 1.3,
           threshold: 0.05,
           aggregation: "SUM",
           colorRange: [
@@ -151,7 +171,7 @@ export default function MapBox({
             [253, 187, 132],
             [227, 74, 51],
           ],
-          opacity: 0.4,
+          opacity: 0.5,
         }),
       );
     }
@@ -191,6 +211,30 @@ export default function MapBox({
             radiusScale: [timer],
             getFillColor: [solarData], // Redraw if data changes
           },
+        }),
+      );
+    }
+    if (activeLayer === "flood") {
+      layers.push(
+        new HeatmapLayer({
+          id: "flood-layer",
+          data: floodData,
+          getPosition: (d: any) => [d.lng, d.lat],
+          getWeight: (d: any) => d.weight,
+          radiusPixels: Math.pow(1.5, zoom - 10) * 15,
+          intensity: 1.5,
+          // Increase threshold to 0.1 to cut off the messy "dark" edges
+          threshold: 0.1,
+          aggregation: "SUM",
+          // NEW COLOR RANGE: Cyan -> Sky Blue -> Deep Blue (No black/dark indigo)
+          colorRange: [
+            [150, 230, 255], // Very Light Blue (Edges)
+            [100, 200, 255],
+            [50, 150, 255],
+            [20, 100, 230],
+            [0, 60, 180], // Deep Blue (Core/Deepest)
+          ],
+          opacity: 0.5,
         }),
       );
     }
