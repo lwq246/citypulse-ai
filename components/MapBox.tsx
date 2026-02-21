@@ -1,12 +1,9 @@
 "use client";
-import { generateFloodData } from "@/utils/mockFloodData";
-import { generateHeatmapData } from "@/utils/mockHeatmapData";
-import { generateSolarData } from "@/utils/mockSolarData";
 import { HeatmapLayer } from "@deck.gl/aggregation-layers";
 import { GoogleMapsOverlay } from "@deck.gl/google-maps";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface MapBoxProps {
   activeLayer: string;
@@ -26,26 +23,80 @@ export default function MapBox({
   const overlayRef = useRef<GoogleMapsOverlay | null>(null);
 
   // 1. DATA GENERATION (Memoized to prevent calculation lag)
-  const heatData = useMemo(() => {
-    return generateHeatmapData(targetLocation.lat, targetLocation.lng);
-  }, [
-    Math.round(targetLocation.lat * 100),
-    Math.round(targetLocation.lng * 100),
-  ]);
+  const [heatData, setHeatData] = useState<any[]>([]);
 
-  const solarData = useMemo(() => {
-    return generateSolarData(targetLocation.lat, targetLocation.lng);
-  }, [
-    Math.round(targetLocation.lat * 100),
-    Math.round(targetLocation.lng * 100),
-  ]);
+  // 3. Add an Effect to fetch the real Thermal Grid
+  useEffect(() => {
+    const fetchRealThermalData = async () => {
+      try {
+        const response = await fetch("/api/thermal-grid", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lat: targetLocation.lat,
+            lng: targetLocation.lng,
+          }),
+        });
+        const data = await response.json();
+        if (!data.error) {
+          setHeatData(data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch real thermal grid", e);
+      }
+    };
 
-  const floodData = useMemo(() => {
-    return generateFloodData(targetLocation.lat, targetLocation.lng);
-  }, [
-    Math.round(targetLocation.lat * 100),
-    Math.round(targetLocation.lng * 100),
-  ]);
+    fetchRealThermalData();
+  }, [targetLocation.lat, targetLocation.lng]);
+
+  // 1. Add state for real solar data
+  const [realSolarBuildings, setRealSolarBuildings] = useState<any[]>([]);
+
+  // 2. Fetch the data when location changes
+  useEffect(() => {
+    const fetchSolarGrid = async () => {
+      try {
+        const response = await fetch("/api/solar-grid", {
+          method: "POST",
+          body: JSON.stringify({
+            lat: targetLocation.lat,
+            lng: targetLocation.lng,
+          }),
+        });
+        const data = await response.json();
+        console.log("FRONTEND RECEIVED DATA:", data.length);
+        if (Array.isArray(data)) {
+          setRealSolarBuildings(data);
+        }
+      } catch (e) {
+        console.error("Solar Grid Fetch Error", e);
+      }
+    };
+    fetchSolarGrid();
+  }, [targetLocation.lat, targetLocation.lng]);
+
+  // 1. Add state for flood grid data
+  const [floodGridData, setFloodGridData] = useState<any[]>([]);
+
+  // 2. Add Effect to fetch the real Flood Grid
+  useEffect(() => {
+    const fetchRealFloodData = async () => {
+      try {
+        const response = await fetch("/api/flood-grid", {
+          method: "POST",
+          body: JSON.stringify({
+            lat: targetLocation.lat,
+            lng: targetLocation.lng,
+          }),
+        });
+        const data = await response.json();
+        setFloodGridData(data);
+      } catch (e) {
+        console.error("Flood Grid Fetch Error", e);
+      }
+    };
+    fetchRealFloodData();
+  }, [targetLocation.lat, targetLocation.lng]);
 
   const [zoom, setZoom] = useState(17);
 
@@ -164,13 +215,20 @@ export default function MapBox({
       layers.push(
         new HeatmapLayer({
           id: "thermal-layer",
-          data: heatData,
+          data: heatData, // heatData now contains raw elevation
           getPosition: (d: any) => [d.lng, d.lat],
-          getWeight: (d: any) => d.weight,
-          radiusPixels: Math.pow(1.6, zoom - 10) * 12,
-          intensity: 1.3,
-          threshold: 0.05,
-          aggregation: "SUM",
+
+          // Logic: Use Raw Elevation to determine color.
+          // Higher Elevation = Lower Weight (Blue).
+          // Lower Elevation (Basins) = Higher Weight (Red).
+          getWeight: (d: any) => {
+            const avgKLHeight = 35;
+            return Math.max(0.1, avgKLHeight - d.elevation + 5);
+          },
+
+          radiusPixels: Math.pow(1.6, zoom - 10) * 15,
+          intensity: 2,
+          threshold: 0.1,
           colorRange: [
             [65, 182, 196],
             [127, 205, 187],
@@ -179,62 +237,73 @@ export default function MapBox({
             [253, 187, 132],
             [227, 74, 51],
           ],
-          opacity: 0.5,
+          opacity: 0.35,
         }),
       );
     }
 
-    // --- SOLAR LAYER ---
+    // --- 100% REAL SOLAR LAYER ---
     if (activeLayer === "solar") {
       layers.push(
         new ScatterplotLayer({
           id: "solar-layer",
-          data: solarData,
+          data: realSolarBuildings,
           getPosition: (d: any) => [d.lng, d.lat],
-          getFillColor: (d: any) => {
-            const w = d.weight || 0.5;
-            return [255, Math.floor(100 + 140 * w), Math.floor(w * 50), 220];
-          },
-          getRadius: zoom > 17 ? 12 : 25,
-          radiusScale: 1 + Math.sin(timer / 5) * 0.1,
+          getFillColor: [255, 191, 0, 200], // Uniform gold for real buildings
+          getRadius: 10,
           pickable: true,
           stroked: true,
-          lineWidthMinPixels: 2,
-          getLineColor: [255, 255, 255, 150],
-          updateTriggers: {
-            radiusScale: [timer],
-            getFillColor: [solarData],
-          },
+          getLineWidth: 2,
+          getLineColor: [255, 255, 255, 255],
         }),
       );
     }
 
     // --- FLOOD LAYER ---
-    if (activeLayer === "flood") {
+    // Inside MapBox.tsx -> Layer Engine
+
+    if (activeLayer === "flood" && floodGridData.length > 0) {
+      const elevations = floodGridData.map((d: any) => d.elevation);
+      const maxLocalHeight = Math.max(...elevations, 1);
+
       layers.push(
         new HeatmapLayer({
           id: "flood-layer",
-          data: floodData,
+          data: floodGridData,
           getPosition: (d: any) => [d.lng, d.lat],
-          getWeight: (d: any) => d.weight,
-          radiusPixels: Math.pow(1.5, zoom - 10) * 15,
-          intensity: 1.5,
+
+          // --- FIX 1: EXAGGERATE DEPTH ---
+          // Instead of simple subtraction, we power it by 2.
+          // This means a 2m drop looks 4x deeper, and a 4m drop looks 16x deeper.
+          getWeight: (d: any) => {
+            const depth = Math.max(0, maxLocalHeight - d.elevation);
+            return Math.pow(depth, 2);
+          },
+
+          // --- FIX 2: LOWER INTENSITY ---
+          // We lower intensity to 0.8 so the whole map doesn't max out to dark blue immediately.
+          intensity: 0.8,
+
+          radiusPixels: Math.pow(1.5, zoom - 10) * 20, // Keep wide radius for blending
           threshold: 0.1,
           aggregation: "SUM",
+
+          // --- FIX 3: HIGH CONTRAST PALETTE ---
+          // We remove the middle blues and jump straight from Light Cyan to Deep Navy.
           colorRange: [
-            [150, 230, 255],
-            [100, 200, 255],
-            [50, 150, 255],
-            [20, 100, 230],
-            [0, 60, 180],
+            [220, 250, 255], // 1. Almost White (Surface Wetness)
+            [100, 220, 255], // 2. Light Cyan
+            [0, 150, 255], // 3. Bright Blue
+            [0, 50, 200], // 4. Royal Blue
+            [0, 10, 100], // 5. Deep Navy (CRITICAL BASIN)
           ],
-          opacity: 0.5,
+          opacity: 0.6,
         }),
       );
     }
 
     overlayRef.current.setProps({ layers });
-  }, [activeLayer, heatData, solarData, floodData, zoom, timer]);
+  }, [activeLayer, heatData, zoom, timer]);
 
   // Handle Camera Movement
   useEffect(() => {

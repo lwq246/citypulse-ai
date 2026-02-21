@@ -24,17 +24,12 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. DYNAMIC FALLBACK (The Fix)
-    // We use the coordinates to "seed" a random number so it's consistent but different per location
-    const seededRandom = (lat + lng) * 10000;
-    const mockArea = Math.floor((Math.abs(Math.sin(seededRandom)) * 150) + 50); // Area between 50-200m2
-    const mockSavings = Math.floor(mockArea * 24.5); // Approx RM 24.5 savings per m2
-
+    // Replace the "DYNAMIC FALLBACK" section with this:
     return NextResponse.json({
-      area: mockArea,
-      savings: mockSavings,
-      potential: mockArea > 120 ? "Excellent" : "Great",
-      source: "AI Predictive Model"
+      area: 0,
+      savings: 0,
+      potential: "Data Pending",
+      source: "Google Solar API (Incomplete Coverage)"
     });
 
   } catch (error) {
