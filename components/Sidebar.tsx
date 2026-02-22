@@ -75,7 +75,7 @@ function LayerToggle({ icon, label, sub, active, onClick }: LayerToggleProps) {
   return (
     <div
       onClick={onClick} // This makes the button interactive
-      className={`flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer hover:bg-white/5 ${
+      className={`flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer select-none hover:bg-white/5 ${
         active
           ? "bg-[#06D6A0]/10 border border-[#06D6A0]/30"
           : "border border-transparent"

@@ -20,12 +20,23 @@ export async function POST(req: Request) {
 
     // From your log, we see the structure is: indexes[0].aqi
     const firstIndex = aqiData.indexes?.[0];
+
+    // Fetch real-time weather data from Open-Meteo 
+    const weatherRes = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`
+    );
+    const weatherData = await weatherRes.json();
+    const currentTemp = weatherData.current_weather?.temperature || (Math.random() * 2 + 31).toFixed(1);
+    const windspeed = weatherData.current_weather?.windspeed || 0;
+    const weathercode = weatherData.current_weather?.weathercode || 0;
     
     return NextResponse.json({
       // Match the key from your log!
       aqi: firstIndex?.aqi || 0, 
       status: firstIndex?.category || "Moderate",
-      temp: (Math.random() * 2 + 31).toFixed(1), // Fallback temp
+      temp: currentTemp,
+      windspeed,
+      weathercode,
     });
 
   } catch (error) {
