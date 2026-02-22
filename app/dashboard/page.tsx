@@ -26,6 +26,8 @@ export default function Dashboard() {
     temp: 0,
     condition: "Loading...",
     status: "Analyzing Area...",
+    windspeed: 0,
+    weathercode: 0,
   });
 
   // 3. SOLAR DATA STATE (Savings & Area)
@@ -62,6 +64,8 @@ export default function Dashboard() {
         temp: parseFloat(data.temp),
         condition: data.condition || "Clear",
         status: data.status || "Moderate",
+        windspeed: data.windspeed || 0,
+        weathercode: data.weathercode || 0,
       });
     } catch (error) {
       console.error("Failed to fetch environmental data:", error);
@@ -116,7 +120,13 @@ export default function Dashboard() {
             name: "My Current Position",
           });
         },
-        (error) => console.error("Initial geolocation error:", error),
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            console.warn("Geolocation permission denied. Using default location.");
+          } else {
+            console.warn("Geolocation error:", error.message);
+          }
+        }
       );
     }
   }, []);
@@ -135,13 +145,24 @@ export default function Dashboard() {
 
   const handleLocateMe = () => {
     if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setTargetLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          name: "My Location",
-        });
-      });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setTargetLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            name: "My Location",
+          });
+        },
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            alert("Please enable location services in your browser settings to use this feature.");
+          } else {
+            console.warn("Geolocation error:", error.message);
+          }
+        }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
     }
   };
 
@@ -211,6 +232,7 @@ export default function Dashboard() {
         <MapBox
           activeLayer={activeLayer}
           targetLocation={targetLocation}
+          envData={envData} // <--- PASS THIS
           onMapClick={(loc) => setTargetLocation(loc)}
           onMapLoad={(map) => {
             mapInstanceRef.current = map;
