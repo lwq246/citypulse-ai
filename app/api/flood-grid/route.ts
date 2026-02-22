@@ -16,14 +16,17 @@ export async function POST(req: Request) {
     const rainMultiplier = 1 + (rainChance / 50); // Risk doubles if 50% rain chance
 
     // 2. Fetch Elevation Grid
-    const points = [];
-    const step = 0.0015;
-    const jitter = step * 0.4; // 40% of the step size as random shift
-    for (let i = -5; i < 5; i++) {
-      for (let j = -5; j < 5; j++) {
+     const points: { lat: number; lng: number }[] = [];
+    const spread = 0.02; // Roughly 2.2km total area coverage
+    const steps = 20;    // 20x20 grid = 400 points
+    const stepSize = spread / steps; 
+    const jitter = stepSize * 0.3; // Slight jitter to keep it organic
+
+    for (let i = -10; i < 10; i++) {
+      for (let j = -10; j < 10; j++) {
         points.push({
-          lat: lat + i * step + (Math.random() - 0.5) * jitter,
-          lng: lng + j * step + (Math.random() - 0.5) * jitter,
+          lat: lat + (i * stepSize) + (Math.random() - 0.5) * jitter,
+          lng: lng + (j * stepSize) + (Math.random() - 0.5) * jitter,
         });
       }
     }
