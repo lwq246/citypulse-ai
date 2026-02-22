@@ -8,7 +8,12 @@ import { useEffect, useRef, useState } from "react";
 interface MapBoxProps {
   activeLayer: string;
   targetLocation: { lat: number; lng: number; name?: string };
-  envData?: { aqi: number; temp: number; windspeed: number; weathercode: number };
+  envData?: {
+    aqi: number;
+    temp: number;
+    windspeed: number;
+    weathercode: number;
+  };
   onMapClick?: (location: { lat: number; lng: number; name: string }) => void;
   onMapLoad?: (map: google.maps.Map) => void;
 }
@@ -42,6 +47,9 @@ export default function MapBox({
         const data = await response.json();
         if (!data.error) {
           setHeatData(data);
+        }
+        if (Array.isArray(data) && data.length === 0) {
+          console.warn("Thermal API returned empty array.");
         }
       } catch (e) {
         console.error("Failed to fetch real thermal grid", e);
@@ -213,38 +221,32 @@ export default function MapBox({
     const layers: any[] = [];
 
     // --- THERMAL LAYER ---
-    if (activeLayer === "thermal") {
-      const baseTemp = envData?.temp || 30;
-      const windCooling = (envData?.windspeed || 0) * 0.1; // Wind reduces heat island effect
-      const aqiPenalty = (envData?.aqi || 50) > 100 ? 1.2 : 1.0; // High AQI traps heat
-
+    // --- THERMAL LAYER (FIXED TO REMOVE GRID LOOK) ---
+    if (activeLayer === "thermal" && heatData.length > 0) {
       layers.push(
         new HeatmapLayer({
           id: "thermal-layer",
-          data: heatData, // heatData now contains raw elevation
+          data: heatData,
           getPosition: (d: any) => [d.lng, d.lat],
-
-          // Logic: Use Raw Elevation to determine color.
-          // Higher Elevation = Lower Weight (Blue).
-          // Lower Elevation (Basins) = Higher Weight (Red).
           getWeight: (d: any) => {
-            const avgKLHeight = 35;
-            // Base weight from elevation
-            let weight = Math.max(0.1, avgKLHeight - d.elevation + 5);
-            
-            // Adjust weight based on real weather data
-            // Higher base temp = higher overall weight
-            // Higher wind = lower weight (cooling effect)
-            // Higher AQI = higher weight (heat trapping)
-            const tempFactor = baseTemp / 30; 
-            weight = (weight * tempFactor * aqiPenalty) - windCooling;
-            
-            return Math.max(0.1, weight); // Ensure weight doesn't go negative
+            const temp = d.temperature || 30;
+            return temp / 45;
           },
 
-          radiusPixels: Math.pow(1.6, zoom - 10) * 15,
-          intensity: 2,
-          threshold: 0.1,
+          // 1. INCREASE RADIUS MULTIPLIER (From 8 to 18)
+          // This makes each point large enough to physically overlap its neighbor in the grid.
+          radiusPixels: Math.pow(1.6, zoom - 10) * 18,
+
+          // 2. INCREASE INTENSITY (From 0.4 to 1.5)
+          // Since the points are more spread out, we need more "power" to make the colors pop.
+          intensity: 1.5,
+
+          // 3. LOWER THRESHOLD (From 0.25 to 0.05)
+          // This is the most important fix!
+          // A low threshold lets the "glow" of each point reach out further to touch the next point.
+          threshold: 0.05,
+
+          aggregation: "SUM",
           colorRange: [
             [65, 182, 196],
             [127, 205, 187],
@@ -253,7 +255,7 @@ export default function MapBox({
             [253, 187, 132],
             [227, 74, 51],
           ],
-          opacity: 0.35,
+          opacity: 0.4,
         }),
       );
     }
@@ -279,37 +281,21 @@ export default function MapBox({
     // Inside MapBox.tsx -> Layer Engine
 
     if (activeLayer === "flood" && floodGridData.length > 0) {
-      const elevations = floodGridData.map((d: any) => d.elevation);
-      const maxLocalHeight = Math.max(...elevations, 1);
-      
       // Weather codes for rain/drizzle/thunderstorm
-      const isRaining = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(envData?.weathercode || 0);
-      const rainMultiplier = isRaining ? 2.0 : 0.5; // Double risk if raining, halve if not
+      const isRaining = [
+        51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99,
+      ].includes(envData?.weathercode || 0);
 
       layers.push(
         new HeatmapLayer({
           id: "flood-layer",
           data: floodGridData,
           getPosition: (d: any) => [d.lng, d.lat],
-
-          // --- FIX 1: EXAGGERATE DEPTH ---
-          // Instead of simple subtraction, we power it by 2.
-          // This means a 2m drop looks 4x deeper, and a 4m drop looks 16x deeper.
-          getWeight: (d: any) => {
-            const depth = Math.max(0, maxLocalHeight - d.elevation);
-            return Math.pow(depth, 2) * rainMultiplier;
-          },
-
-          // --- FIX 2: LOWER INTENSITY ---
-          // We lower intensity to 0.8 so the whole map doesn't max out to dark blue immediately.
+          getWeight: (d: any) => d.weight,
           intensity: 0.8,
-
           radiusPixels: Math.pow(1.5, zoom - 10) * 20, // Keep wide radius for blending
           threshold: 0.1,
           aggregation: "SUM",
-
-          // --- FIX 3: HIGH CONTRAST PALETTE ---
-          // We remove the middle blues and jump straight from Light Cyan to Deep Navy.
           colorRange: [
             [220, 250, 255], // 1. Almost White (Surface Wetness)
             [100, 220, 255], // 2. Light Cyan
@@ -323,7 +309,15 @@ export default function MapBox({
     }
 
     overlayRef.current.setProps({ layers });
-  }, [activeLayer, heatData, zoom, timer, envData, floodGridData, realSolarBuildings]);
+  }, [
+    activeLayer,
+    heatData,
+    zoom,
+    timer,
+    envData,
+    floodGridData,
+    realSolarBuildings,
+  ]);
 
   // Handle Camera Movement
   useEffect(() => {

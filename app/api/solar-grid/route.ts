@@ -5,7 +5,6 @@ export async function POST(req: Request) {
   try {
     const { lat, lng } = await req.json();
     // Log the request coordinates for the grid scan
-    console.log(`Solar GRID request coordinates: lat=${lat}, lng=${lng}`);
     const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     // 1. INCREASE DENSITY: 10x10 grid (100 probes)
