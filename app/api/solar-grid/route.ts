@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       points.map(async (p) => {
         try {
           // Log each probe's coordinates (may be many)
-          console.log(`Solar probe coordinates: lat=${p.lat}, lng=${p.lng}`);
+          // console.log(`Solar probe coordinates: lat=${p.lat}, lng=${p.lng}`);
           // Google findClosest looks for the nearest processed building
           // Use GET with query params (matches browser test that returned JSON)
           const url = `https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude=${p.lat}&location.longitude=${p.lng}&requiredQuality=BASE&experiments=EXPANDED_COVERAGE&key=${API_KEY}`;
@@ -82,13 +82,13 @@ export async function POST(req: Request) {
 
     const finalRealData = Array.from(uniqueBuildingsMap.values());
 
-    console.log(`Deep Scan found ${finalRealData.length} unique verified buildings.`);
-    try {
-      const sample = finalRealData.slice(0, 50); // limit output
-      console.log("Deep Scan results (sample up to 50):", JSON.stringify(sample, null, 2));
-    } catch (e) {
-      console.log("Deep Scan results: (could not stringify results)");
-    }
+    
+    // try {
+    //   const sample = finalRealData.slice(0, 50); // limit output
+    //   console.log("Deep Scan results (sample up to 50):", JSON.stringify(sample, null, 2));
+    // } catch (e) {
+    //   console.log("Deep Scan results: (could not stringify results)");
+    // }
     return NextResponse.json(finalRealData);
 
   } catch (error) {

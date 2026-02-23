@@ -74,7 +74,7 @@ export default function MapBox({
           }),
         });
         const data = await response.json();
-        console.log("FRONTEND RECEIVED DATA:", data.length);
+        // console.log("FRONTEND RECEIVED DATA:", data.length);
         if (Array.isArray(data)) {
           setRealSolarBuildings(data);
         }
@@ -223,14 +223,24 @@ export default function MapBox({
     // --- THERMAL LAYER ---
     // --- THERMAL LAYER (FIXED TO REMOVE GRID LOOK) ---
     if (activeLayer === "thermal" && heatData.length > 0) {
+      const elevations = heatData.map((p) => p.elevation);
+      const maxElev = Math.max(...elevations);
       layers.push(
         new HeatmapLayer({
           id: "thermal-layer",
           data: heatData,
           getPosition: (d: any) => [d.lng, d.lat],
           getWeight: (d: any) => {
-            const temp = d.temperature || 30;
-            return temp / 45;
+            // A. Temperature Baseline (e.g., 2.6 for 26°C)
+            const baseWeight = (d.temperature || 30) / 10;
+
+            // B. Elevation Variance (The "Heat Sink" logic)
+            // We calculate how many meters "lower" this point is than the peak.
+            // A point 10m lower than the peak gets +5.0 weight (Very Red)
+            const relativeDepth = maxElev - d.elevation;
+            const depthWeight = relativeDepth * 0.5;
+
+            return baseWeight + depthWeight;
           },
 
           // 1. INCREASE RADIUS MULTIPLIER (From 8 to 18)
@@ -239,7 +249,7 @@ export default function MapBox({
 
           // 2. INCREASE INTENSITY (From 0.4 to 1.5)
           // Since the points are more spread out, we need more "power" to make the colors pop.
-          intensity: 1.5,
+          intensity: 1.7,
 
           // 3. LOWER THRESHOLD (From 0.25 to 0.05)
           // This is the most important fix!

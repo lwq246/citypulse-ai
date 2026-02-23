@@ -9,8 +9,8 @@ export async function POST(req: Request) {
     const weatherUrl = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${API_KEY}&location.latitude=${lat}&location.longitude=${lng}`;
     const weatherRes = await fetch(weatherUrl);
     const weatherData = await weatherRes.json();
-    console.log("Weather API URL:", weatherUrl);
-    console.log("Weather API Response:", weatherData);
+    // console.log("Weather API URL:", weatherUrl);
+    // console.log("Weather API Response:", weatherData);
     // Extract precipitation percentage
     const rainChance = weatherData.precipitation?.probability?.percent || 0;
     const rainMultiplier = 1 + (rainChance / 50); // Risk doubles if 50% rain chance
@@ -35,8 +35,8 @@ export async function POST(req: Request) {
     const elevUrl = `https://maps.googleapis.com/maps/api/elevation/json?locations=${locations}&key=${API_KEY}`;
     const elevRes = await fetch(elevUrl);
     const elevData = await elevRes.json();
-    console.log("Elevation API URL:", elevUrl);
-    console.log("Elevation API Response:", elevData);
+    // console.log("Elevation API URL:", elevUrl);
+    // console.log("Elevation API Response:", elevData);
 
     if (!elevData.results || elevData.results.length === 0) {
       console.warn("No elevation data returned.");
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       };
     });
 
-    console.log("Flood Final Points:", finalPoints);
+    // console.log("Flood Final Points:", finalPoints);
     return NextResponse.json(finalPoints); // Return array directly!
 
   } catch (error) {
