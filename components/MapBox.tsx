@@ -252,33 +252,40 @@ export default function MapBox({
 
           const geocoder = new Geocoder();
 
-          // --- NEW: INITIAL AUTO-LOCATE AFTER 1 SECOND ---
-          setTimeout(() => {
-            const center = instance.getCenter();
-            if (!center) return;
+          // --- AUTO-LOCATE AFTER USER GEOLOCATION IS AVAILABLE ---
+          if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
 
-            const lat = center.lat();
-            const lng = center.lng();
+                instance.panTo({ lat, lng });
 
-            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-              if (status === "OK" && results && results[0] && onMapClick) {
-                const components = results[0].address_components;
-                const poi = components.find(
-                  (c) =>
-                    c.types.includes("point_of_interest") ||
-                    c.types.includes("establishment"),
-                );
-                const route = components.find((c) => c.types.includes("route"));
-                let name = poi
-                  ? poi.long_name
-                  : route
-                    ? route.long_name
-                    : results[0].formatted_address.split(",")[0];
-                
-                onMapClick({ lat, lng, name });
-              }
-            });
-          }, 1000);
+                geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                  if (status === "OK" && results && results[0] && onMapClick) {
+                    const components = results[0].address_components;
+                    const poi = components.find(
+                      (c) =>
+                        c.types.includes("point_of_interest") ||
+                        c.types.includes("establishment"),
+                    );
+                    const route = components.find((c) => c.types.includes("route"));
+                    let name = poi
+                      ? poi.long_name
+                      : route
+                        ? route.long_name
+                        : results[0].formatted_address.split(",")[0];
+
+                    onMapClick({ lat, lng, name });
+                  }
+                });
+              },
+              () => {
+                // If geolocation fails or is denied, do nothing and wait for user input.
+              },
+              { enableHighAccuracy: true, timeout: 8000 },
+            );
+          }
 
           // --- NEW: DRAG TO RE-CENTER LOGIC ---
           let dragTimeout: NodeJS.Timeout;
