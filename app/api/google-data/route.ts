@@ -1,45 +1,71 @@
-// app/api/google-data/route.ts
 import { NextResponse } from 'next/server';
-
-// app/api/google-data/route.ts
 
 export async function POST(req: Request) {
   try {
     const { lat, lng } = await req.json();
     const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    
-    const aqiRes = await fetch(
-      `https://airquality.googleapis.com/v1/currentConditions:lookup?key=${API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location: { latitude: lat, longitude: lng } }),
-      }
-    );
-    const aqiData = await aqiRes.json();
+    const coords = { latitude: lat, longitude: lng };
 
-    // From your log, we see the structure is: indexes[0].aqi
-    const firstIndex = aqiData.indexes?.[0];
+    console.log(`--- [GOOGLE DATA] Fetching for: ${lat}, ${lng} ---`);
 
-    // Fetch real-time weather data from Open-Meteo 
-    const weatherRes = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`
-    );
-    const weatherData = await weatherRes.json();
-    const currentTemp = weatherData.current_weather?.temperature || (Math.random() * 2 + 31).toFixed(1);
-    const windspeed = weatherData.current_weather?.windspeed || 0;
-    const weathercode = weatherData.current_weather?.weathercode || 0;
-    
-    return NextResponse.json({
-      // Match the key from your log!
-      aqi: firstIndex?.aqi || 0, 
-      status: firstIndex?.category || "Moderate",
-      temp: currentTemp,
-      windspeed,
-      weathercode,
+    // 1. Fetch REAL Google Air Quality (POST)
+    const aqiUrl = `https://airquality.googleapis.com/v1/currentConditions:lookup?key=${API_KEY}`;
+    const aqiRes = await fetch(aqiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ location: coords }),
     });
+    const aqiData = await aqiRes.json();
+    
+    console.log(`[AIR QUALITY] Received:`, JSON.stringify(aqiData?.indexes?.[0] || "No Data"));
 
-  } catch (error) {
-    return NextResponse.json({ aqi: 0, status: "Error" }, { status: 500 });
+    // 2. Fetch REAL Google Weather (GET)
+    const weatherUrl = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${API_KEY}&location.latitude=${lat}&location.longitude=${lng}`;
+    console.log(`[WEATHER] Requesting URL: ${weatherUrl}`);
+
+    const weatherRes = await fetch(weatherUrl);
+    const weatherData = await weatherRes.json();
+    
+    // Log Sample of weather response to verify keys
+    console.log(`[WEATHER] Raw Temperature Data:`, weatherData?.temperature);
+    console.log(`[WEATHER] Raw Condition Type:`, weatherData?.weatherCondition?.type);
+
+    // --- DATA EXTRACTION ---
+    const firstIndex = aqiData.indexes?.[0];
+    const temp = weatherData.temperature?.degrees || 31.0;
+    const windspeed = weatherData.wind?.speed?.value || 0;
+    const conditionText = weatherData.weatherCondition?.description?.text || "Clear";
+    const weatherType = weatherData.weatherCondition?.type || "CLEAR";
+    console.log(`[DATA EXTRACTION] Temp: ${temp}°C, Wind Speed: ${windspeed} m/s, Condition: ${conditionText}, Type: ${weatherType}`);
+    // --- SMART MAPPING FOR WEATHERCODE ---
+    // Mapping Google String Types to the Numeric Codes used in your MapBox.tsx
+    let weathercode = 0;
+    if (weatherType.includes("RAIN") || weatherType.includes("DRIZZLE")) {
+      weathercode = 61;
+      console.log(">>> RAIN DETECTED (Code 61)");
+    } else if (weatherType.includes("THUNDERSTORM")) {
+      weathercode = 95;
+      console.log(">>> THUNDERSTORM DETECTED (Code 95)");
+    } else if (weatherType.includes("SNOW")) {
+      weathercode = 71;
+    }
+
+    const finalPayload = {
+      aqi: firstIndex?.aqi || 0,
+      status: firstIndex?.category || "Moderate",
+      temp: temp,
+      windspeed: windspeed,
+      condition: conditionText,
+      weathercode: weathercode,
+    };
+
+    console.log(`[FINAL PAYLOAD] Sent to Frontend:`, finalPayload);
+    console.log(`--- [GOOGLE DATA] Done ---`);
+
+    return NextResponse.json(finalPayload);
+
+  } catch (error: any) {
+    console.error("!!! [ENVIRONMENTAL API ERROR]:", error.message);
+    return NextResponse.json({ aqi: 0, status: "Error", temp: 31.0, weathercode: 0 }, { status: 500 });
   }
 }

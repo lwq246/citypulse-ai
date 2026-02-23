@@ -5,41 +5,59 @@ export async function POST(req: Request) {
     const { lat, lng } = await req.json();
     const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
+    // 1. GENERATE GRID COORDINATES
+    // 12x12 grid = 144 points (Safe for Elevation API batch limit of 512)
     const points: { lat: number; lng: number }[] = [];
     const spread = 0.015; 
-    const step = spread / 10; // 100 points for high precision
+    const steps = 12;
+    const stepSize = spread / steps;
+    const jitter = stepSize * 0.7; // Break the grid look
 
-   
-    const jitter = step * 0.4; // 40% of the step size as random shift
-
-    for (let i = -5; i < 5; i++) {
-    for (let j = -5; j < 5; j++) {
+    for (let i = -6; i < 6; i++) {
+      for (let j = -6; j < 6; j++) {
         points.push({
-        // Adding Jitter here breaks the grid pattern
-        lat: lat + (i * step) + (Math.random() - 0.5) * jitter,
-        lng: lng + (j * step) + (Math.random() - 0.5) * jitter,
+          lat: lat + (i * stepSize) + (Math.random() - 0.5) * jitter,
+          lng: lng + (j * stepSize) + (Math.random() - 0.5) * jitter,
         });
+      }
     }
+
+    // 2. FETCH REAL AMBIENT TEMPERATURE (1 Request)
+    // Since temperature is uniform in a 1km radius, we get the truth for the center.
+    const weatherUrl = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${API_KEY}&location.latitude=${lat}&location.longitude=${lng}`;
+    const weatherRes = await fetch(weatherUrl);
+    const weatherData = await weatherRes.json();
+    
+    // Extract base temperature from the JSON format provided
+    const baseTemp = weatherData?.temperature?.degrees ;
+
+    // 3. FETCH REAL TOPOGRAPHY (1 Batch Request)
+    // We send all 144 points to Google in one single pipe-separated string
+    const locationsString = points.map(p => `${p.lat},${p.lng}`).join("|");
+    const elevUrl = `https://maps.googleapis.com/maps/api/elevation/json?locations=${locationsString}&key=${API_KEY}`;
+    const elevRes = await fetch(elevUrl);
+    const elevData = await elevRes.json();
+
+    if (!elevData.results) {
+      throw new Error("Elevation API failed");
     }
 
-    const locations = points.map((p) => `${p.lat},${p.lng}`).join("|");
-    const url = `https://maps.googleapis.com/maps/api/elevation/json?locations=${locations}&key=${API_KEY}`;
+    // 4. COMBINE DATA FOR THE FRONTEND
+    // We map the elevation results back to our points and include the base temperature
+    const combinedPoints = elevData.results.map((result: any) => {
+      return {
+        lat: result.location.lat,
+        lng: result.location.lng,
+        elevation: result.elevation,
+        temperature: baseTemp // Attach real ambient temp
+      };
+    });
 
-    const response = await fetch(url);
-    const data = await response.json();
+    // console.log(`Thermal Scan Complete: ${combinedPoints.length} nodes processed at ${baseTemp}°C`);
 
-    if (data.status !== "OK") return NextResponse.json([]);
-
-    // We pass the RAW elevation. 
-    // The MapBox will decide the color based on these real numbers.
-    const realElevationPoints = data.results.map((r: any) => ({
-      lat: r.location.lat,
-      lng: r.location.lng,
-      elevation: r.elevation // Pure ground truth
-    }));
-
-    return NextResponse.json(realElevationPoints);
-  } catch (error) {
+    return NextResponse.json(combinedPoints);
+  } catch (error: any) {
+    console.error("Backend error:", error.message);
     return NextResponse.json([]);
   }
 }

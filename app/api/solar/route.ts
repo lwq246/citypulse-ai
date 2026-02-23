@@ -4,7 +4,6 @@ export async function POST(req: Request) {
   try {
     const { lat, lng } = await req.json();
     // Log the requested coordinates for debugging (lat, lng)
-    console.log(`Solar API request coordinates: lat=${lat}, lng=${lng}`);
     const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
     // Use GET with query parameters (matches successful browser request)
