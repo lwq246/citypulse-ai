@@ -20,17 +20,84 @@ export default function MapBox({
   onMapClick,
   onMapLoad,
 }: MapBoxProps) {
+  const GRID_SPREAD = 0.015;
+  const GRID_STEP = GRID_SPREAD / 10;
+  const GRID_JITTER = GRID_STEP * 0.4;
+  const GRID_PAD = GRID_SPREAD / 2 + GRID_JITTER;
+
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const overlayRef = useRef<GoogleMapsOverlay | null>(null);
 
   // 1. DATA GENERATION (Memoized to prevent calculation lag)
   const [heatData, setHeatData] = useState<any[]>([]);
+  const [thermalCache, setThermalCache] = useState<any[]>([]);
+  const [floodCache, setFloodCache] = useState<any[]>([]);
+
+  const getGridBBox = (lat: number, lng: number) => {
+    return {
+      minLat: lat - GRID_PAD,
+      maxLat: lat + GRID_PAD,
+      minLng: lng - GRID_PAD,
+      maxLng: lng + GRID_PAD,
+    };
+  };
+
+  const bboxContains = (bbox: any, lat: number, lng: number) => {
+    return (
+      lat >= bbox.minLat &&
+      lat <= bbox.maxLat &&
+      lng >= bbox.minLng &&
+      lng <= bbox.maxLng
+    );
+  };
+
+  const bboxIntersects = (a: any, b: any) => {
+    return !(
+      a.maxLat < b.minLat ||
+      a.minLat > b.maxLat ||
+      a.maxLng < b.minLng ||
+      a.minLng > b.maxLng
+    );
+  };
+
+  const collectCachedData = (cache: any[]) => {
+    return cache.flatMap((entry) => entry.data || []);
+  };
+
+  useEffect(() => {
+    try {
+      const thermalRaw = localStorage.getItem("citypulse-thermal-cache");
+      const floodRaw = localStorage.getItem("citypulse-flood-cache");
+
+      if (thermalRaw) {
+        const parsed = JSON.parse(thermalRaw);
+        if (Array.isArray(parsed)) setThermalCache(parsed);
+      }
+
+      if (floodRaw) {
+        const parsed = JSON.parse(floodRaw);
+        if (Array.isArray(parsed)) setFloodCache(parsed);
+      }
+    } catch (e) {
+      console.error("Failed to load cache:", e);
+    }
+  }, []);
 
   // 3. Add an Effect to fetch the real Thermal Grid
   useEffect(() => {
     const fetchRealThermalData = async () => {
       try {
+        const bbox = getGridBBox(targetLocation.lat, targetLocation.lng);
+        const cacheHit = thermalCache.find((entry) =>
+          bboxContains(entry, targetLocation.lat, targetLocation.lng),
+        );
+
+        if (cacheHit) {
+          setHeatData(collectCachedData(thermalCache));
+          return;
+        }
+
         const response = await fetch("/api/thermal-grid", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -41,7 +108,13 @@ export default function MapBox({
         });
         const data = await response.json();
         if (!data.error) {
-          setHeatData(data);
+          const nextEntry = { ...bbox, data };
+          setThermalCache((prev) => {
+            const nextCache = [...prev, nextEntry];
+            setHeatData(collectCachedData(nextCache));
+            localStorage.setItem("citypulse-thermal-cache", JSON.stringify(nextCache));
+            return nextCache;
+          });
         }
       } catch (e) {
         console.error("Failed to fetch real thermal grid", e);
@@ -49,7 +122,7 @@ export default function MapBox({
     };
 
     fetchRealThermalData();
-  }, [targetLocation.lat, targetLocation.lng]);
+  }, [targetLocation.lat, targetLocation.lng, thermalCache]);
 
   // 1. Add state for real solar data
   const [realSolarBuildings, setRealSolarBuildings] = useState<any[]>([]);
@@ -84,6 +157,16 @@ export default function MapBox({
   useEffect(() => {
     const fetchRealFloodData = async () => {
       try {
+        const bbox = getGridBBox(targetLocation.lat, targetLocation.lng);
+        const cacheHit = floodCache.find((entry) =>
+          bboxContains(entry, targetLocation.lat, targetLocation.lng),
+        );
+
+        if (cacheHit) {
+          setFloodGridData(collectCachedData(floodCache));
+          return;
+        }
+
         const response = await fetch("/api/flood-grid", {
           method: "POST",
           body: JSON.stringify({
@@ -92,13 +175,19 @@ export default function MapBox({
           }),
         });
         const data = await response.json();
-        setFloodGridData(data);
+        const nextEntry = { ...bbox, data };
+        setFloodCache((prev) => {
+          const nextCache = [...prev, nextEntry];
+          setFloodGridData(collectCachedData(nextCache));
+          localStorage.setItem("citypulse-flood-cache", JSON.stringify(nextCache));
+          return nextCache;
+        });
       } catch (e) {
         console.error("Flood Grid Fetch Error", e);
       }
     };
     fetchRealFloodData();
-  }, [targetLocation.lat, targetLocation.lng]);
+  }, [targetLocation.lat, targetLocation.lng, floodCache]);
 
   const [zoom, setZoom] = useState(17);
 
@@ -128,9 +217,9 @@ export default function MapBox({
         if (mapRef.current && !mapInstanceRef.current) {
           const instance = new Map(mapRef.current, {
             center: { lat: targetLocation.lat, lng: targetLocation.lng },
-            zoom: 17,
+            zoom: 18.5,
             maxZoom: 19,
-            minZoom: 12,
+            minZoom: 18,
             tilt: 45,
             heading: 0,
             mapId: process.env.NEXT_PUBLIC_MAP_ID as string,
@@ -162,6 +251,74 @@ export default function MapBox({
           if (onMapLoad) onMapLoad(instance);
 
           const geocoder = new Geocoder();
+
+          // --- NEW: INITIAL AUTO-LOCATE AFTER 1 SECOND ---
+          setTimeout(() => {
+            const center = instance.getCenter();
+            if (!center) return;
+
+            const lat = center.lat();
+            const lng = center.lng();
+
+            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+              if (status === "OK" && results && results[0] && onMapClick) {
+                const components = results[0].address_components;
+                const poi = components.find(
+                  (c) =>
+                    c.types.includes("point_of_interest") ||
+                    c.types.includes("establishment"),
+                );
+                const route = components.find((c) => c.types.includes("route"));
+                let name = poi
+                  ? poi.long_name
+                  : route
+                    ? route.long_name
+                    : results[0].formatted_address.split(",")[0];
+                
+                onMapClick({ lat, lng, name });
+              }
+            });
+          }, 1000);
+
+          // --- NEW: DRAG TO RE-CENTER LOGIC ---
+          let dragTimeout: NodeJS.Timeout;
+
+          instance.addListener("dragend", () => {
+            // Clear any existing timeout if user starts dragging again quickly
+            clearTimeout(dragTimeout);
+
+            // Set a new timeout for 2 seconds
+            dragTimeout = setTimeout(() => {
+              const center = instance.getCenter();
+              if (!center) return;
+
+              const lat = center.lat();
+              const lng = center.lng();
+
+              // Reverse geocode to get the name of the new center
+              geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                if (status === "OK" && results && results[0] && onMapClick) {
+                  const components = results[0].address_components;
+                  const poi = components.find(
+                    (c) =>
+                      c.types.includes("point_of_interest") ||
+                      c.types.includes("establishment"),
+                  );
+                  const route = components.find((c) => c.types.includes("route"));
+                  let name = poi
+                    ? poi.long_name
+                    : route
+                      ? route.long_name
+                      : results[0].formatted_address.split(",")[0];
+                  
+                  // Trigger the same update as a click
+                  onMapClick({ lat, lng, name });
+                }
+              });
+            }, 500); 
+          });
+
+          // Keep the click listener for immediate updates
           instance.addListener("click", (e: google.maps.MapMouseEvent) => {
             if (!e.latLng) return;
             const lat = e.latLng.lat();
@@ -242,6 +399,11 @@ export default function MapBox({
             return Math.max(0.1, weight); // Ensure weight doesn't go negative
           },
 
+          // --- FIX: STABILIZE THERMAL COLORS ---
+          // Force Deck.gl to map weights from 0 to 40 to the colorRange.
+          // Without this, it auto-scales based on the max weight in the current view.
+          colorDomain: [0, 40],
+
           radiusPixels: Math.pow(1.6, zoom - 10) * 15,
           intensity: 2,
           threshold: 0.1,
@@ -279,8 +441,11 @@ export default function MapBox({
     // Inside MapBox.tsx -> Layer Engine
 
     if (activeLayer === "flood" && floodGridData.length > 0) {
-      const elevations = floodGridData.map((d: any) => d.elevation);
-      const maxLocalHeight = Math.max(...elevations, 1);
+      // --- FIX: STABILIZE FLOOD COLORS ---
+      // Instead of finding the max height in the current view (which changes when you drag),
+      // we use a fixed reference height for KL (e.g., 45 meters).
+      // This ensures a 20m elevation always looks the same, regardless of what's nearby.
+      const fixedReferenceHeight = 45;
       
       // Weather codes for rain/drizzle/thunderstorm
       const isRaining = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(envData?.weathercode || 0);
@@ -296,9 +461,14 @@ export default function MapBox({
           // Instead of simple subtraction, we power it by 2.
           // This means a 2m drop looks 4x deeper, and a 4m drop looks 16x deeper.
           getWeight: (d: any) => {
-            const depth = Math.max(0, maxLocalHeight - d.elevation);
+            // Use the fixed reference height instead of maxLocalHeight
+            const depth = Math.max(0, fixedReferenceHeight - d.elevation);
             return Math.pow(depth, 2) * rainMultiplier;
           },
+
+          // --- FIX: STABILIZE FLOOD COLORS ---
+          // Force Deck.gl to map weights from 0 to 1000 (approx 31m drop squared) to the colorRange.
+          colorDomain: [0, 1000],
 
           // --- FIX 2: LOWER INTENSITY ---
           // We lower intensity to 0.8 so the whole map doesn't max out to dark blue immediately.
