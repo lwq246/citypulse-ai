@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  ArrowRight,
-  Globe,
-  Heart,
-  LayoutGrid,
-  Mail,
-  Search,
-  Thermometer,
-  Wind,
-} from "lucide-react";
+import { Heart, Thermometer, Wind } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -96,6 +87,9 @@ export default function LandingPage() {
 
       {/* 4. QUICK JUMP HOTSPOTS */}
       <section className="pb-40 relative z-10">
+        <h3 className="text-center text-xs font-bold tracking-[0.3em] text-gray-500 uppercase mb-12">
+          Hotspots
+        </h3>
         <div className="flex justify-center gap-6 overflow-x-auto px-10 no-scrollbar">
           {/* NEW: KLCC Park (Greenery/Trees) */}
           <HotspotImage
@@ -179,7 +173,6 @@ export default function LandingPage() {
           © 2024 Urban Cooling Initiative. All rights reserved. Built for Kuala
           Lumpur.
         </p>
-
       </footer>
     </div>
   );
