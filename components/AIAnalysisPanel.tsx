@@ -195,7 +195,7 @@ export default function AIAnalysisPanel({
         Generate Full Report
       </button>
 
-      <p className="text-[8px] text-gray-600 font-mono text-center uppercase tracking-widest opacity-40 shrink-0">
+      <p suppressHydrationWarning className="text-[8px] text-gray-600 font-mono text-center uppercase tracking-widest opacity-40 shrink-0">
         Engine v4.0.21 // {new Date().toLocaleTimeString()} MYT
       </p>
     </motion.div>
