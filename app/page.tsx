@@ -38,25 +38,7 @@ export default function LandingPage() {
           </span>
         </div>
 
-        <div className="hidden md:flex gap-8 text-sm font-medium text-gray-400">
-          <Link href="#" className="hover:text-primary transition-colors">
-            Mission
-          </Link>
-          <Link href="#" className="hover:text-primary transition-colors">
-            Data Layers
-          </Link>
-          <Link href="#" className="hover:text-primary transition-colors">
-            Partners
-          </Link>
-          <Link href="#" className="hover:text-primary transition-colors">
-            Case Studies
-          </Link>
-        </div>
-
         <div className="flex gap-4">
-          <button className="px-5 py-2 text-sm font-medium border border-white/10 rounded-full hover:bg-white/5 transition-all">
-            Log In
-          </button>
           <Link
             href="/dashboard"
             className="px-5 py-2 text-sm font-bold bg-primary text-[#0B1211] rounded-full hover:scale-105 shadow-[0_0_20px_rgba(6,214,160,0.4)] transition-all"
@@ -78,22 +60,6 @@ export default function LandingPage() {
           Harnessing data-driven urban planning to combat the heat island effect
           and improve city livability through immersive spatial intelligence.
         </p>
-
-        {/* Search Bar */}
-        <div className="mt-12 w-full max-w-2xl relative flex items-center group">
-          <Search
-            className="absolute left-6 text-gray-500 group-focus-within:text-primary transition-colors"
-            size={20}
-          />
-          <input
-            type="text"
-            placeholder="Search a neighborhood or landmark in KL..."
-            className="w-full bg-[#0B1211]/60 border border-white/10 rounded-full py-5 pl-14 pr-36 outline-none focus:border-primary/50 transition-all text-lg backdrop-blur-xl shadow-2xl"
-          />
-          <button className="absolute right-2 bg-primary text-[#0B1211] font-bold px-8 py-3 rounded-full hover:brightness-110 transition-all shadow-lg">
-            Locate
-          </button>
-        </div>
 
         {/* CTA Button */}
         <Link href="/dashboard" className="mt-12 group">
@@ -130,9 +96,6 @@ export default function LandingPage() {
 
       {/* 4. QUICK JUMP HOTSPOTS */}
       <section className="pb-40 relative z-10">
-        <h3 className="text-center text-xs font-bold tracking-[0.3em] text-gray-500 uppercase mb-12">
-          Quick Jump to Hotspots
-        </h3>
         <div className="flex justify-center gap-6 overflow-x-auto px-10 no-scrollbar">
           {/* NEW: KLCC Park (Greenery/Trees) */}
           <HotspotImage
@@ -216,20 +179,7 @@ export default function LandingPage() {
           © 2024 Urban Cooling Initiative. All rights reserved. Built for Kuala
           Lumpur.
         </p>
-        <div className="flex gap-8">
-          <Globe
-            size={18}
-            className="hover:text-primary cursor-pointer transition-colors"
-          />
-          <LayoutGrid
-            size={18}
-            className="hover:text-primary cursor-pointer transition-colors"
-          />
-          <Mail
-            size={18}
-            className="hover:text-primary cursor-pointer transition-colors"
-          />
-        </div>
+
       </footer>
     </div>
   );
@@ -255,9 +205,6 @@ function FeatureCard({
       </div>
       <h3 className="text-3xl font-bold mb-4 tracking-tight">{title}</h3>
       <p className="text-gray-400 text-sm leading-relaxed mb-10">{desc}</p>
-      <button className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-widest group-hover:gap-4 transition-all">
-        {linkText} <ArrowRight size={14} />
-      </button>
       <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500 opacity-50" />
     </div>
   );
