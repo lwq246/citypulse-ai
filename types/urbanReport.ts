@@ -1,7 +1,3 @@
-/**
- * Type definitions for Urban Report generation
- */
-
 export interface MetricData {
   label: string;
   value: number;
@@ -18,6 +14,10 @@ export interface UrbanReportJSON {
   recommendations: string[];
   environmental_insights: string;
   generated_at: string;
+  images?: {
+    streetView?: string;
+    satellite?: string;
+  };
 }
 
 export interface ReportGenerationRequest {

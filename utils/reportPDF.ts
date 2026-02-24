@@ -7,10 +7,10 @@ export function generateReportPDF(report: UrbanReportJSON): void {
   const pageWidth = doc.internal.pageSize.width;
 
   // Header Box
-  doc.setFillColor(11, 18, 17); // Dark theme
+  doc.setFillColor(11, 18, 17);
   doc.rect(0, 0, pageWidth, 40, 'F');
 
-  doc.setTextColor(6, 214, 160); // Accent
+  doc.setTextColor(6, 214, 160);
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.text('URBAN INTELLIGENCE REPORT', 14, 22);
@@ -19,12 +19,12 @@ export function generateReportPDF(report: UrbanReportJSON): void {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(`Location: ${report.location_name}`, 14, 32);
-  doc.text(
-    `Generated: ${new Date(report.generated_at).toLocaleString()}`,
-    pageWidth - 14,
-    32,
-    { align: 'right' },
-  );
+
+  // Clean Date for PDF
+  const safeDate = report.generated_at
+    ? new Date(report.generated_at).toLocaleString()
+    : new Date().toLocaleString();
+  doc.text(`Generated: ${safeDate}`, pageWidth - 14, 32, { align: 'right' });
 
   let yPos = 55;
 
@@ -43,6 +43,52 @@ export function generateReportPDF(report: UrbanReportJSON): void {
   );
   doc.text(splitSummary, 14, yPos + 8);
   yPos += splitSummary.length * 5 + 15;
+
+  // --- ADDED: IMAGES IN PDF ---
+  if (report.images && (report.images.streetView || report.images.satellite)) {
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Visual Data Points', 14, yPos);
+    yPos += 8;
+
+    const imgWidth = (pageWidth - 28 - 10) / 2; // Two images side by side
+    const imgHeight = (imgWidth * 2) / 3; // Maintain 3:2 aspect ratio
+    let currentX = 14;
+
+    if (report.images.satellite) {
+      // jsPDF natively parses 'data:image/jpeg;base64,...'
+      doc.addImage(
+        report.images.satellite,
+        'JPEG',
+        currentX,
+        yPos,
+        imgWidth,
+        imgHeight,
+      );
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.text('Satellite Capture', currentX, yPos + imgHeight + 5);
+      currentX += imgWidth + 10;
+    }
+
+    if (report.images.streetView) {
+      doc.addImage(
+        report.images.streetView,
+        'JPEG',
+        currentX,
+        yPos,
+        imgWidth,
+        imgHeight,
+      );
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.text('Street Level Capture', currentX, yPos + imgHeight + 5);
+    }
+
+    yPos += imgHeight + 15;
+  }
+  // --- END IMAGES IN PDF ---
 
   // AutoTable
   doc.setTextColor(40, 40, 40);
@@ -77,6 +123,12 @@ export function generateReportPDF(report: UrbanReportJSON): void {
   yPos = (doc as any).lastAutoTable.finalY + 15;
 
   // Recommendations
+  // Page break check if getting too close to bottom
+  if (yPos > doc.internal.pageSize.height - 40) {
+    doc.addPage();
+    yPos = 20;
+  }
+
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('Actionable Recommendations', 14, yPos);
@@ -86,6 +138,12 @@ export function generateReportPDF(report: UrbanReportJSON): void {
   yPos += 8;
 
   report.recommendations.forEach((rec) => {
+    // Check page break during loop
+    if (yPos > doc.internal.pageSize.height - 20) {
+      doc.addPage();
+      yPos = 20;
+    }
+
     doc.setFillColor(6, 214, 160);
     doc.circle(16, yPos - 1, 1.5, 'F');
     const splitRec = doc.splitTextToSize(rec, pageWidth - 35);

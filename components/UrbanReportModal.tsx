@@ -149,8 +149,8 @@ export default function UrbanReportModal({
                 ) : report ? (
                   <div className="space-y-10">
                     {/* Top Title & Summary */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      <div className="col-span-1 lg:col-span-2">
+                    <div className="grid grid-cols-1 gap-8">
+                      <div>
                         <h3 className="text-3xl sm:text-4xl font-black text-gray-900 mb-3 tracking-tight">
                           {report.location_name}
                         </h3>
@@ -164,7 +164,7 @@ export default function UrbanReportModal({
                           <p>{report.executive_summary}</p>
                         </div>
                       </div>
-                      <div className="col-span-1 bg-gray-50 rounded-3xl p-6 border border-gray-100 flex flex-col justify-center">
+                      <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100">
                         <div className="flex items-center gap-2 mb-3">
                           <Leaf className="text-[#06D6A0] w-5 h-5" />
                           <h4 className="font-bold text-gray-900">
@@ -176,6 +176,45 @@ export default function UrbanReportModal({
                         </p>
                       </div>
                     </div>
+
+                    {/* Image Grid */}
+                    {report.images &&
+                      (report.images.streetView || report.images.satellite) && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-5">
+                            <Target className="text-gray-400 w-5 h-5" />
+                            <h4 className="text-lg font-bold text-gray-900">
+                              Visual Data Points
+                            </h4>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {report.images.satellite && (
+                              <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-sm group">
+                                <img
+                                  src={report.images.satellite}
+                                  alt="Satellite View"
+                                  className="w-full h-48 sm:h-56 object-cover transition-transform duration-700 group-hover:scale-105"
+                                />
+                                <div className="absolute top-3 left-3 bg-[#0B1211]/70 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-bold text-white uppercase tracking-wider">
+                                  Satellite Capture
+                                </div>
+                              </div>
+                            )}
+                            {report.images.streetView && (
+                              <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-sm group">
+                                <img
+                                  src={report.images.streetView}
+                                  alt="Street View"
+                                  className="w-full h-48 sm:h-56 object-cover transition-transform duration-700 group-hover:scale-105"
+                                />
+                                <div className="absolute top-3 left-3 bg-[#0B1211]/70 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-bold text-white uppercase tracking-wider">
+                                  Street Level
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                     {/* Dashboard Metric Cards */}
                     <div>
@@ -192,15 +231,25 @@ export default function UrbanReportModal({
                             const isCritical =
                               metric.status === 'Critical' ||
                               metric.status === 'Poor';
-                            const maxVal = metric.unit.includes('°C')
-                              ? 50
-                              : metric.unit.includes('AQI')
-                                ? 500
-                                : 100;
-                            const percentage = Math.min(
-                              (metric.value / maxVal) * 100,
-                              100,
-                            );
+
+                            // Check if value is numeric
+                            const isNumeric =
+                              typeof metric.value === 'number' &&
+                              !isNaN(metric.value);
+
+                            // Calculate progress bar only for numeric values
+                            let percentage = 0;
+                            if (isNumeric) {
+                              const maxVal = metric.unit.includes('°C')
+                                ? 50
+                                : metric.unit.includes('AQI')
+                                  ? 500
+                                  : 100;
+                              percentage = Math.min(
+                                (metric.value / maxVal) * 100,
+                                100,
+                              );
+                            }
 
                             return (
                               <motion.div
@@ -208,7 +257,7 @@ export default function UrbanReportModal({
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.05 }}
-                                className="relative overflow-hidden p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all group flex flex-col"
+                                className="relative overflow-hidden p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:shadow-md transition-all group flex flex-col h-full"
                               >
                                 {/* Metric Header */}
                                 <div className="flex items-start justify-between mb-4">
@@ -234,21 +283,23 @@ export default function UrbanReportModal({
                                   </span>
                                 </div>
 
-                                {/* Linear Progress Bar */}
-                                <div className="w-full mt-auto bg-gray-100 rounded-full h-1.5 mb-3 overflow-hidden">
-                                  <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${percentage}%` }}
-                                    transition={{
-                                      duration: 1,
-                                      delay: 0.2 + index * 0.1,
-                                      ease: 'easeOut',
-                                    }}
-                                    className={`h-full ${getProgressColor(metric.status)} rounded-full`}
-                                  />
-                                </div>
+                                {/* Linear Progress Bar - Only show for numeric values */}
+                                {isNumeric && (
+                                  <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4 overflow-hidden">
+                                    <motion.div
+                                      initial={{ width: 0 }}
+                                      animate={{ width: `${percentage}%` }}
+                                      transition={{
+                                        duration: 1,
+                                        delay: 0.2 + index * 0.1,
+                                        ease: 'easeOut',
+                                      }}
+                                      className={`h-full ${getProgressColor(metric.status)} rounded-full`}
+                                    />
+                                  </div>
+                                )}
 
-                                {/* Description */}
+                                {/* Description - Grows to fill remaining space */}
                                 <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
                                   {metric.description}
                                 </p>
