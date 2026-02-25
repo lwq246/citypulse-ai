@@ -117,6 +117,7 @@ export default function AIAnalysisPanel({
   const offset = circumference - (walkScore / 100) * circumference;
 
   const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=800x450&location=${lat},${lng}&fov=90&heading=235&pitch=10&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
+  const satelliteUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=18&size=800x450&maptype=satellite&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
 
   // Wrap the entire return in a Fragment to decouple the Modal from the Sidebar's transform CSS
   return (
@@ -155,29 +156,46 @@ export default function AIAnalysisPanel({
           </span>
         </div>
 
-        {/* 2. STREET CAM */}
-        <div className="relative w-[356px] h-[200px] rounded-[2rem] overflow-hidden border border-white/10 mb-8 shadow-2xl group shrink-0 mx-auto">
-          <img
-            src={streetViewUrl}
-            alt="Street View"
-            className="w-full h-full object-cover grayscale-[15%] brightness-90"
-          />
-          <div className="absolute top-4 left-6 bg-black/50 backdrop-blur-md px-3 py-1 rounded-md text-[8px] font-mono text-gray-300 border border-white/10 tracking-widest uppercase">
-            Street_Cam_012 // Live
+        {/* 2. VISUAL DATA FEEDS */}
+        <div className="flex gap-3 mb-8 shrink-0 mx-auto w-[356px]">
+          {/* Satellite Image */}
+          <div className="relative flex-1 h-[200px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
+            <img
+              src={satelliteUrl}
+              alt="Satellite View"
+              className="w-full h-full object-cover brightness-90"
+            />
+            <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-md text-[7px] font-mono text-gray-300 border border-white/10 tracking-widest uppercase">
+              Sat_Feed // Live
+            </div>
           </div>
-          <div className="absolute bottom-5 left-6 flex flex-col gap-2 items-start">
-            <div className="bg-[#06D6A0] text-[#0B1211] px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
-              <CheckCircle2 size={12} strokeWidth={3} />
-              <span className="text-[9px] font-black uppercase tracking-wider">
-                {shadeScore > 40 ? 'Vegetation Detected' : 'Low Canopy Density'}
-              </span>
+
+          {/* Street View Image */}
+          <div className="relative flex-1 h-[200px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
+            <img
+              src={streetViewUrl}
+              alt="Street View"
+              className="w-full h-full object-cover grayscale-[15%] brightness-90"
+            />
+            <div className="absolute top-3 left-3 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-md text-[7px] font-mono text-gray-300 border border-white/10 tracking-widest uppercase">
+              Street_Cam // Live
             </div>
-            <div className="bg-[#1A1A1A]/80 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/10 shadow-lg">
-              <AlertTriangle size={12} className="text-yellow-500" />
-              <span className="text-[9px] font-bold uppercase tracking-wider">
-                Heat Mass: {walkScore < 50 ? 'High' : 'Optimal'}
-              </span>
-            </div>
+          </div>
+        </div>
+
+        {/* Status Badges */}
+        <div className="flex gap-2 mb-8 shrink-0 px-2">
+          <div className="bg-[#06D6A0] text-[#0B1211] px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+            <CheckCircle2 size={12} strokeWidth={3} />
+            <span className="text-[9px] font-black uppercase tracking-wider">
+              {shadeScore > 40 ? 'Vegetation Detected' : 'Low Canopy Density'}
+            </span>
+          </div>
+          <div className="bg-[#1A1A1A]/80 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/10 shadow-lg">
+            <AlertTriangle size={12} className="text-yellow-500" />
+            <span className="text-[9px] font-bold uppercase tracking-wider">
+              Heat Mass: {walkScore < 50 ? 'High' : 'Optimal'}
+            </span>
           </div>
         </div>
 
