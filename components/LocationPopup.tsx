@@ -170,7 +170,7 @@ export default function LocationPopup({
         <button
           onClick={onAnalyze}
           disabled={isAnalyzing}
-          className="text-[#0B1211] text-[9px] font-black py-2 rounded-md hover:brightness-110 active:scale-95 transition-all uppercase tracking-tighter shadow-lg flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-[#0B1211] text-[9px] font-black py-2 rounded-md hover:brightness-110 active:scale-95 transition-all uppercase tracking-tighter shadow-lg flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ backgroundColor: accentColor }}
         >
           {isAnalyzing ? (
@@ -184,7 +184,7 @@ export default function LocationPopup({
         </button>
         <button
           onClick={openStreetView}
-          className="bg-white/5 border border-white/10 text-white text-[9px] font-bold py-2 rounded-md hover:bg-white/10 active:scale-95 transition-all uppercase tracking-tighter flex items-center justify-center gap-1"
+          className="bg-white/5 border border-white/10 text-white text-[9px] font-bold py-2 rounded-md hover:bg-white/10 active:scale-95 transition-all uppercase tracking-tighter flex items-center justify-center gap-1 cursor-pointer"
         >
           <Maximize2 size={10} />
           View 360°

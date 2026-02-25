@@ -9,7 +9,7 @@ import Sidebar from '@/components/Sidebar';
 import StatusWidgets from '@/components/StatusWidgets';
 import { AnimatePresence } from 'framer-motion';
 import { LocateFixed } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 export default function Dashboard() {
   const [activeLayer, setActiveLayer] = useState('thermal');
 
@@ -44,7 +44,22 @@ export default function Dashboard() {
     estDepth: '0.0m',
   });
 
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState<any>(null);
+
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
+
+  const updateTargetLocation = useCallback(
+    (location: {
+      lat: number;
+      lng: number;
+      name: string;
+    }) => {
+      setTargetLocation(location);
+      setAiResult(null);
+    },
+    [],
+  );
 
   // --- DATA FETCHING ENGINE ---
 
@@ -114,7 +129,7 @@ export default function Dashboard() {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setTargetLocation({
+          updateTargetLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
             name: 'My Current Position',
@@ -131,7 +146,7 @@ export default function Dashboard() {
         },
       );
     }
-  }, []);
+  }, [updateTargetLocation]);
 
   // Effect 2: Unified Data Trigger
   // This ensures that whenever 'targetLocation' updates, ALL data layers refresh
@@ -149,7 +164,7 @@ export default function Dashboard() {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setTargetLocation({
+          updateTargetLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
             name: 'My Location',
@@ -206,9 +221,6 @@ export default function Dashboard() {
     }
   };
 
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [aiResult, setAiResult] = useState<any>(null);
-
   const runAIAnalysis = async () => {
     setIsAnalyzing(true);
     try {
@@ -237,7 +249,7 @@ export default function Dashboard() {
           activeLayer={activeLayer}
           targetLocation={targetLocation}
           envData={envData} // <--- PASS THIS
-          onMapClick={(loc) => setTargetLocation(loc)}
+          onMapClick={updateTargetLocation}
           onMapLoad={(map) => {
             mapInstanceRef.current = map;
           }}
@@ -252,7 +264,7 @@ export default function Dashboard() {
         </div>
 
         <div className="flex-1 flex justify-center pointer-events-auto px-4">
-          <SearchBar onLocationSelect={setTargetLocation} />
+          <SearchBar onLocationSelect={updateTargetLocation} />
         </div>
 
         <div className="flex flex-col items-end gap-4 pointer-events-auto">

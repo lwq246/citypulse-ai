@@ -134,8 +134,7 @@ export default function AIAnalysisPanel({
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-[#06D6A0] rounded-full animate-pulse shadow-[0_0_8px_#06D6A0]" />
             <span className="text-[10px] font-bold text-[#06D6A0] tracking-[0.2em] uppercase italic">
-              Live Analysis //{' '}
-              {activeLayer ? activeLayer.toUpperCase() : 'GENERAL'}
+              Live Analysis 
             </span>
           </div>
           <button
