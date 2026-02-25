@@ -448,15 +448,11 @@ export default function MapBox({
     // Inside MapBox.tsx -> Layer Engine
 
     if (activeLayer === "flood" && floodGridData.length > 0) {
-      // --- FIX: STABILIZE FLOOD COLORS ---
-      // Instead of finding the max height in the current view (which changes when you drag),
-      // we use a fixed reference height for KL (e.g., 45 meters).
-      // This ensures a 20m elevation always looks the same, regardless of what's nearby.
-      const fixedReferenceHeight = 45;
       
       // Weather codes for rain/drizzle/thunderstorm
       const isRaining = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(envData?.weathercode || 0);
       const rainMultiplier = isRaining ? 2.0 : 0.5; // Double risk if raining, halve if not
+      const dryWeightScale = isRaining ? 1 : 0.2;
 
       layers.push(
         new HeatmapLayer({
@@ -464,25 +460,30 @@ export default function MapBox({
           data: floodGridData,
           getPosition: (d: any) => [d.lng, d.lat],
 
-          // --- FIX 1: EXAGGERATE DEPTH ---
-          // Instead of simple subtraction, we power it by 2.
-          // This means a 2m drop looks 4x deeper, and a 4m drop looks 16x deeper.
+          // Use backend flood weight directly (already computed from elevation + rain).
+          // Fallback to elevation-based weight only if needed.
           getWeight: (d: any) => {
-            // Use the fixed reference height instead of maxLocalHeight
-            const depth = Math.max(0, fixedReferenceHeight - d.elevation);
-            return Math.pow(depth, 2) * rainMultiplier;
+            if (typeof d.weight === "number" && Number.isFinite(d.weight)) {
+              return Math.max(0.1, d.weight * dryWeightScale);
+            }
+
+            if (typeof d.elevation === "number" && Number.isFinite(d.elevation)) {
+              const fallbackReferenceHeight = 45;
+              const depth = Math.max(0, fallbackReferenceHeight - d.elevation);
+              return Math.max(0.1, Math.pow(depth, 2) * rainMultiplier);
+            }
+
+            return 0.1;
           },
 
           // --- FIX: STABILIZE FLOOD COLORS ---
           // Force Deck.gl to map weights from 0 to 1000 (approx 31m drop squared) to the colorRange.
-          colorDomain: [0, 1000],
+          colorDomain: [0, 6000],
 
-          // --- FIX 2: LOWER INTENSITY ---
-          // We lower intensity to 0.8 so the whole map doesn't max out to dark blue immediately.
-          intensity: 0.8,
+          intensity: isRaining ? 0.85 : 0.5,
 
           radiusPixels: Math.pow(1.5, zoom - 10) * 20, // Keep wide radius for blending
-          threshold: 0.1,
+          threshold: 0.06,
           aggregation: "SUM",
 
           // --- FIX 3: HIGH CONTRAST PALETTE ---
@@ -494,7 +495,7 @@ export default function MapBox({
             [0, 50, 200], // 4. Royal Blue
             [0, 10, 100], // 5. Deep Navy (CRITICAL BASIN)
           ],
-          opacity: isRaining ? 0.8 : 0.4, // More opaque if raining
+          opacity: isRaining ? 0.7 : 0.18, // Keep dry-day flood layer very subtle
         }),
       );
     }
