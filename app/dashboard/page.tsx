@@ -1,31 +1,31 @@
-'use client';
-
-import AIAnalysisPanel from '@/components/AIAnalysisPanel';
-import LocationPopup from '@/components/LocationPopup';
-import MapBox from '@/components/MapBox';
-import MapControls from '@/components/MapControls';
-import SearchBar from '@/components/SearchBar';
-import Sidebar from '@/components/Sidebar';
-import StatusWidgets from '@/components/StatusWidgets';
-import { AnimatePresence } from 'framer-motion';
-import { LocateFixed } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+"use client";
+import AIAnalysisPanel from "@/components/AIAnalysisPanel";
+import LocationPopup from "@/components/LocationPopup";
+import MapBox from "@/components/MapBox";
+import MapControls from "@/components/MapControls";
+import SearchBar from "@/components/SearchBar";
+import Sidebar from "@/components/Sidebar";
+import StatusWidgets from "@/components/StatusWidgets";
+import { AnimatePresence } from "framer-motion";
+import { ArrowLeft, LocateFixed } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 export default function Dashboard() {
-  const [activeLayer, setActiveLayer] = useState('thermal');
+  const [activeLayer, setActiveLayer] = useState("thermal");
 
   // 1. LOCATION STATE
   const [targetLocation, setTargetLocation] = useState({
     lat: 3.1579,
     lng: 101.7116,
-    name: 'KL City Centre',
+    name: "KL City Centre",
   });
 
   // 2. ENVIRONMENTAL DATA STATE (Temp & Air Quality)
   const [envData, setEnvData] = useState({
     aqi: 0,
     temp: 0,
-    condition: 'Loading...',
-    status: 'Analyzing Area...',
+    condition: "Loading...",
+    status: "Analyzing Area...",
     windspeed: 0,
     weathercode: 0,
   });
@@ -34,14 +34,14 @@ export default function Dashboard() {
   const [solarData, setSolarData] = useState({
     area: 0,
     savings: 0,
-    potential: 'Analyzing...',
-    source: 'Initializing...',
+    potential: "Analyzing...",
+    source: "Initializing...",
   });
 
   const [floodData, setFloodData] = useState({
-    elevation: '0',
-    riskLevel: 'Analyzing...',
-    estDepth: '0.0m',
+    elevation: "0",
+    riskLevel: "Analyzing...",
+    estDepth: "0.0m",
   });
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -50,11 +50,7 @@ export default function Dashboard() {
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
 
   const updateTargetLocation = useCallback(
-    (location: {
-      lat: number;
-      lng: number;
-      name: string;
-    }) => {
+    (location: { lat: number; lng: number; name: string }) => {
       setTargetLocation(location);
       setAiResult(null);
     },
@@ -66,36 +62,36 @@ export default function Dashboard() {
   // Fetches Air Quality and Weather
   const fetchEnvironmentalData = async (lat: number, lng: number) => {
     try {
-      const response = await fetch('/api/google-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/google-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat, lng }),
       });
-      if (!response.ok) throw new Error('Env API error');
+      if (!response.ok) throw new Error("Env API error");
       const data = await response.json();
 
       setEnvData({
         aqi: Number(data.aqi),
         temp: parseFloat(data.temp),
-        condition: data.condition || 'Clear',
-        status: data.status || 'Moderate',
+        condition: data.condition || "Clear",
+        status: data.status || "Moderate",
         windspeed: data.windspeed || 0,
         weathercode: data.weathercode || 0,
       });
     } catch (error) {
-      console.error('Failed to fetch environmental data:', error);
+      console.error("Failed to fetch environmental data:", error);
     }
   };
 
   // Fetches Solar Insights (Google API + Predictive Fallback)
   const fetchSolarInsights = async (lat: number, lng: number) => {
     try {
-      const res = await fetch('/api/solar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/solar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat, lng }),
       });
-      if (!res.ok) throw new Error('Solar API error');
+      if (!res.ok) throw new Error("Solar API error");
       const data = await res.json();
 
       setSolarData({
@@ -105,20 +101,20 @@ export default function Dashboard() {
         source: data.source,
       });
     } catch (e) {
-      console.error('Solar Fetch Error', e);
+      console.error("Solar Fetch Error", e);
     }
   };
 
   const fetchFloodData = async (lat: number, lng: number) => {
     try {
-      const res = await fetch('/api/flood', {
-        method: 'POST',
+      const res = await fetch("/api/flood", {
+        method: "POST",
         body: JSON.stringify({ lat, lng }),
       });
       const data = await res.json();
       setFloodData(data);
     } catch (e) {
-      console.error('Flood API Error', e);
+      console.error("Flood API Error", e);
     }
   };
 
@@ -126,22 +122,22 @@ export default function Dashboard() {
 
   // Effect 1: Initial Geolocation (Runs once)
   useEffect(() => {
-    if ('geolocation' in navigator) {
+    if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           updateTargetLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-            name: 'My Current Position',
+            name: "My Current Position",
           });
         },
         (error) => {
           if (error.code === error.PERMISSION_DENIED) {
             console.warn(
-              'Geolocation permission denied. Using default location.',
+              "Geolocation permission denied. Using default location.",
             );
           } else {
-            console.warn('Geolocation error:', error.message);
+            console.warn("Geolocation error:", error.message);
           }
         },
       );
@@ -161,27 +157,27 @@ export default function Dashboard() {
   // --- MAP CONTROL FUNCTIONS ---
 
   const handleLocateMe = () => {
-    if ('geolocation' in navigator) {
+    if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           updateTargetLocation({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-            name: 'My Location',
+            name: "My Location",
           });
         },
         (error) => {
           if (error.code === error.PERMISSION_DENIED) {
             alert(
-              'Please enable location services in your browser settings to use this feature.',
+              "Please enable location services in your browser settings to use this feature.",
             );
           } else {
-            console.warn('Geolocation error:', error.message);
+            console.warn("Geolocation error:", error.message);
           }
         },
       );
     } else {
-      alert('Geolocation is not supported by your browser.');
+      alert("Geolocation is not supported by your browser.");
     }
   };
 
@@ -224,8 +220,8 @@ export default function Dashboard() {
   const runAIAnalysis = async () => {
     setIsAnalyzing(true);
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
+      const res = await fetch("/api/analyze", {
+        method: "POST",
         body: JSON.stringify({
           lat: targetLocation.lat,
           lng: targetLocation.lng,
@@ -235,7 +231,7 @@ export default function Dashboard() {
       const data = await res.json();
       setAiResult(data);
     } catch (e) {
-      console.error('AI Error', e);
+      console.error("AI Error", e);
     } finally {
       setIsAnalyzing(false);
     }
@@ -243,6 +239,54 @@ export default function Dashboard() {
 
   return (
     <main className="relative w-full h-screen overflow-hidden bg-[#0B1211] text-white font-sans">
+      {/* LAYER 1: TOP HUD (Sidebar, Search, Status) */}
+      {/* This layer is just for the items at the top edge */}
+      <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
+        <div className="flex items-start gap-3 pointer-events-auto">
+          <Link
+            href="/"
+            className="flex items-center gap-2 bg-[#141E1C]/90 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full text-gray-400 hover:text-[#06D6A0] hover:bg-white/5 transition-all shadow-xl"
+            style={{ minWidth: 0 }}
+          >
+            <ArrowLeft size={18} />
+            <span className="text-sm font-semibold">Back</span>
+          </Link>
+          <Sidebar activeLayer={activeLayer} setActiveLayer={setActiveLayer} />
+        </div>
+
+        <div className="flex-1 flex justify-center pointer-events-auto px-4">
+          <SearchBar onLocationSelect={updateTargetLocation} />
+        </div>
+
+        <div className="flex flex-col items-end gap-4 pointer-events-auto">
+          <StatusWidgets
+            aqi={envData.aqi}
+            temp={envData.temp}
+            status={envData.status}
+          />
+          <div className="bg-[#141E1C]/80 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full shadow-2xl">
+            <span className="text-[10px] text-gray-400 uppercase tracking-widest mr-2 font-bold">
+              Active Region
+            </span>
+            <span className="text-xs font-bold text-[#06D6A0]">
+              {targetLocation.name}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* LAYER 0: THE MAP (Background) */}
+      <div className="absolute inset-0 z-0">
+        <MapBox
+          activeLayer={activeLayer}
+          targetLocation={targetLocation}
+          envData={envData} // <--- PASS THIS
+          onMapClick={updateTargetLocation}
+          onMapLoad={(map) => {
+            mapInstanceRef.current = map;
+          }}
+        />
+      </div>
       {/* LAYER 0: THE MAP (Background) */}
       <div className="absolute inset-0 z-0">
         <MapBox
@@ -359,19 +403,19 @@ export default function Dashboard() {
         {/* Intensity Legend */}
         <div className="bg-[#141E1C]/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl pointer-events-auto shadow-2xl">
           <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2 font-bold">
-            {activeLayer === 'solar'
-              ? 'Solar Potential'
-              : activeLayer === 'flood'
-                ? 'Flood Vulnerability'
-                : 'Thermal Intensity'}
+            {activeLayer === "solar"
+              ? "Solar Potential"
+              : activeLayer === "flood"
+                ? "Flood Vulnerability"
+                : "Thermal Intensity"}
           </p>
           <div
             className={`w-48 h-2 rounded-full transition-all duration-500 ${
-              activeLayer === 'solar'
-                ? 'bg-gradient-to-r from-amber-900 via-yellow-500 to-yellow-200'
-                : activeLayer === 'flood'
-                  ? 'bg-gradient-to-r from-cyan-300 via-blue-500 to-indigo-900'
-                  : 'bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500'
+              activeLayer === "solar"
+                ? "bg-gradient-to-r from-amber-900 via-yellow-500 to-yellow-200"
+                : activeLayer === "flood"
+                  ? "bg-gradient-to-r from-cyan-300 via-blue-500 to-indigo-900"
+                  : "bg-gradient-to-r from-blue-500 via-yellow-400 to-red-500"
             }`}
           />
           <div className="flex justify-between text-[8px] mt-1 text-gray-500 font-bold uppercase tracking-tighter">
