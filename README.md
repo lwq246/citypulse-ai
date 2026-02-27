@@ -103,9 +103,9 @@ Follow these steps to set up and run the project locally on your machine.
 
 ### 4.3 Configuration
 
-Create a file named `.env.local` in the root directory of the project.
+1. **Create a file named `.env.local` in the root directory of the project.**
 
-Ensure the following APIs are **enabled** in your Google Cloud Console:
+2. **Ensure the following APIs are **enabled** in your Google Cloud Console:**
 
 - **NEXT_PUBLIC_GOOGLE_MAPS_API_KEY**  
   _(Your Google Maps Platform API Key)_
@@ -115,3 +115,18 @@ Ensure the following APIs are **enabled** in your Google Cloud Console:
 
 - **GEMINI_API_KEY**  
   _(Your Gemini API Key for Gemini 2.5 integration)_
+
+3. **Add Environment Variables**
+
+Add your API keys to the `.env.local` file as shown below:
+
+```env
+# Google Maps Platform API Key
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="YOUR_MAPS_API_KEY"
+
+# Vector Map ID (Created in Google Maps Management)
+NEXT_PUBLIC_MAP_ID="YOUR_MAP_ID"
+
+# Gemini API Key (From Google AI Studio)
+GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
+```
