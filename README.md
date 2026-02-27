@@ -50,21 +50,16 @@ $$W_{thermal} = \frac{T_{ambient}}{10} + (H_{max} - H_{point}) \times 0.5$$
 
 This models micro heat traps caused by terrain variation and thermal mass accumulation.
 
-### 🌊 Flood Guardian (SDG 11)
+#### 🌊 Flood Guardian Vulnerability Model
 
-A hydrological vulnerability model that detects **Topographical Depressions (Basins)** and scales risk using live precipitation data:
+Our engine calculates hydrological pooling risk ($W_{flood}$) by performing a real-time synthesis of topographical and meteorological data:
 
-\[
-W*{flood} = (H*{max} - H*{point})^2 \times \left(1 + \frac{P*{rain}}{50}\right)
-\]
+$$W_{flood} = (H_{max} - H_{point})^2 \times \left(1 + \frac{P_{rain}}{50}\right)$$
 
-**Where:**
+- **Quadratic Depth Scaling $(H_{max} - H_{point})^2$**: This logic exponentially amplifies the weight of deep topographical basins over shallow depressions. By squaring the elevation delta, we ensure that high-risk "bowls" are visually distinct from minor terrain variations.
+- **$P_{rain}$ (Precipitation Probability)**: Real-time data fetched from the **Google Weather API**. It acts as a dynamic risk multiplier, effectively scaling the intensity of the flood layer based on current meteorological conditions.
 
-- \(H\_{max}\) = Highest elevation in local radius
-- \(H\_{point}\) = Ground elevation at target coordinate
-- \(P\_{rain}\) = Precipitation probability (Google Weather API)
-
-This amplifies flood risk in low-lying areas during high rainfall probability.
+**Technical Insight:** This bivariate model transforms static elevation data into a dynamic early-warning system. In clear weather ($P_{rain} \approx 0$), the layer highlights theoretical vulnerability; during active storms ($P_{rain} \uparrow$), the multiplier intensifies the visualization to represent active inundation risk.
 
 ### ☀️ Solar Goldmine (SDG 13)
 
