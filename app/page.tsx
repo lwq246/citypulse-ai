@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Thermometer, Wind } from "lucide-react";
+import { Sun, Thermometer, Wind } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -25,17 +25,8 @@ export default function LandingPage() {
             <div className="w-4 h-4 bg-[#0B1211] rounded-full rotate-45" />
           </div>
           <span className="font-bold tracking-tighter text-xl italic">
-            COOLER<span className="text-primary">KL</span>
+            CITYPULSE<span className="text-primary"> AI</span>
           </span>
-        </div>
-
-        <div className="flex gap-4">
-          <Link
-            href="/dashboard"
-            className="px-5 py-2 text-sm font-bold bg-primary text-[#0B1211] rounded-full hover:scale-105 shadow-[0_0_20px_rgba(6,214,160,0.4)] transition-all"
-          >
-            Launch App
-          </Link>
         </div>
       </nav>
 
@@ -55,7 +46,7 @@ export default function LandingPage() {
         {/* CTA Button */}
         <Link href="/dashboard" className="mt-12 group">
           <div className="bg-primary text-[#0B1211] font-black px-12 py-6 rounded-full text-2xl shadow-[0_0_50px_rgba(6,214,160,0.3)] hover:shadow-primary/60 transition-all active:scale-95">
-            Start Exploring (Guest Mode)
+            Start Exploring
           </div>
           <p className="text-[10px] text-gray-400 mt-4 tracking-[0.3em] font-bold uppercase drop-shadow-md">
             No account required to visualize
@@ -66,22 +57,26 @@ export default function LandingPage() {
       {/* 3. FEATURE CARDS */}
       <section className="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-8 mb-40 relative z-10">
         <FeatureCard
-          icon={<Wind className="text-blue-400" />}
-          title="Livability"
-          desc="Optimizing walkable streets and shaded transit corridors to reduce pedestrian heat exposure."
-          linkText="Explore Metrics"
+          icon={<Thermometer className="text-[#06D6A0]" />}
+          title="Thermal Pulse"
+          desc="Visualizing the Urban Heat Island effect through 100-node topographical grid scans and real-time Google Weather baseline data."
+          linkText="Explore Heatmaps"
         />
+
+        {/* 2. SOLAR GOLDMINE CARD */}
         <FeatureCard
-          icon={<Thermometer className="text-primary" />}
-          title="Climate"
-          desc="Advanced urban heat mitigation and carbon sequestration modeling for a resilient future."
-          linkText="View Simulations"
+          icon={<Sun className="text-yellow-400" />}
+          title="Solar Goldmine"
+          desc="Identifying high-potential rooftops using the Google Solar API to provide precise architectural audits and RM savings projections."
+          linkText="Analyze Savings"
         />
+
+        {/* 3. FLOOD GUARDIAN CARD */}
         <FeatureCard
-          icon={<Heart className="text-red-400" />}
-          title="Health"
-          desc="Improving air quality and mental well-being through strategic expansion of urban green spaces."
-          linkText="Access Insights"
+          icon={<Wind className="text-blue-400" />} // Using Wind or Waves icon
+          title="Flood Guardian"
+          desc="Predicting hydrological pooling risks by correlating topographical basin analysis with live precipitation probability data."
+          linkText="Assess Risk"
         />
       </section>
 
@@ -101,13 +96,10 @@ export default function LandingPage() {
           {/* NEW: Merdeka 118 (Skyscraper) */}
           <HotspotImage
             name="Merdeka 118 District"
-            url="\images\Merdeka_118_District.jpg"
+            url="/images/Merdeka_118_District.jpg"
           />
           {/* NEW: Putrajaya (Bridge/Architecture) */}
-          <HotspotImage
-            name="Putrajaya Corridors"
-            url="https://images.unsplash.com/photo-1630713745260-848691b1062c?auto=format&fit=crop&q=80&w=600"
-          />
+          <HotspotImage name="Batu Caves" url="/images/Batu_Caves.jpg" />
         </div>
       </section>
 
@@ -166,13 +158,9 @@ export default function LandingPage() {
             <div className="w-2.5 h-2.5 bg-[#0B1211] rounded-full" />
           </div>
           <span className="font-bold text-white text-lg tracking-tighter italic">
-            COOLER<span className="text-primary">KL</span>
+            CITYPULSE<span className="text-primary"> AI</span>
           </span>
         </div>
-        <p className="font-medium tracking-wide">
-          © 2024 Urban Cooling Initiative. All rights reserved. Built for Kuala
-          Lumpur.
-        </p>
       </footer>
     </div>
   );
