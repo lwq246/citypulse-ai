@@ -1,154 +1,196 @@
-# 🏙️ CityPulse AI
+# 🏙️ CityPulse AI | Urban Data Engine
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)](https://cloud.google.com/)
+**KitaHack 2026 — Addressing SDG 3 (Health), 11 (Sustainable Cities), and 13 (Climate Action)**
 
-An AI-first urban "pulse" analysis system that transforms Google's 3D city model of Kuala Lumpur into a living sustainability dashboard at the address level. CityPulse AI addresses critical visibility, decision, and trust gaps in urban environmental data by making risks like heat exposure and flooding as easy to see and act on as traffic conditions on Google Maps today.
+CityPulse AI is an AI-first urban intelligence system that transforms Google’s 3D city model into a living sustainability dashboard. By visualizing "invisible" environmental risks—such as the Urban Heat Island effect and topographical flood basins—we provide citizens and planners with the data needed to build a more resilient city.
 
-![CityPulse AI Demo](./demo.gif)
-_(**Note:** It is highly recommended to add a screen recording or GIF of your application in action here and name it `demo.gif` in your repository.)_
+## 🏗️ 1. Technical Architecture
 
----
+The system utilizes a **Decoupled Full-Stack Architecture** designed for high performance and high-fidelity geospatial visualization.
 
-## 1. Technical Implementation Overview
+## 🖥️ Frontend (Rendering Engine)
 
-This project is a full-stack web application built on a modern JavaScript framework, leveraging a comprehensive suite of Google's AI and geospatial technologies to deliver a real-time, interactive user experience.
-
-#### **1.1 Core Technologies Used**
-
-- **Frontend:**
-  - **Framework:** [Next.js](https://nextjs.org/) with [React](https://reactjs.org/) for building a responsive, server-rendered user interface.
-  - **Mapping:** [Google Maps JavaScript API](https://developers.google.com/maps/documentation/javascript) using a Vector Map ID and Photorealistic 3D Tiles for the immersive city model.
-  - **Data Visualization:** [Deck.gl](https://deck.gl/) for high-performance, WebGL-accelerated rendering of analytical data layers (heatmaps, scatterplots) on top of the base map.
-
-- **Backend (Next.js App Router API Routes):**
-  - The backend is built entirely within the Next.js framework using stateless API Routes. This server-side environment orchestrates calls to all Google APIs, manages API keys securely, and normalizes data before sending it to the client.
-
-- **Google AI and Developer Tech Used:**
-  - **Google Maps Platform (Data & Geospatial Backbone):**
-    - `Maps JavaScript API` (Vector map rendering)
-    - `Elevation API` (Topographic analysis & basin depth calculation)
-    - `Weather API` (Real-time temperature, wind, and precipitation probability)
-    - `Air Quality API` (Pollution indicators for the thermal modifier)
-    - `Solar API` (Building Insights for renewable energy potential)
-    - `Street View Static API & Metadata` (Street-level visual context)
-    - `Maps Static API` (Satellite imagery context)
-    - `Geocoding API` (Reverse geocoding for user interactions)
-  - **Google AI:**
-    - `Gemini Flash-lite`: The core AI engine, used for its multimodal capabilities. It handles two distinct tasks: a quick analysis based on Street View imagery and a full, multimodal report generation combining imagery and structured data.
-
-#### **1.2 System Architecture**
-
-The architecture is designed with two key principles: responsive client-side visualization and server-orchestrated data. The frontend focuses purely on rendering and interaction, while the backend centralizes API key handling, data fetching, and normalization. This prevents exposing API keys on the client and reduces cross-origin complexity.
-
-## 2. Explanation of Implementation, Innovation, and Challenges
-
-#### 2.1 Implementation Details
-
-The system's core logic is divided into several data pipelines that generate the analytical layers and AI reports.
-
-- **Thermal Heatmap Pipeline:** The `/api/thermal-grid` endpoint generates a `12x12` grid of jittered points around the user's target location. It makes a single call to the Weather API to get the ambient temperature and a batch call to the Elevation API for all 144 points. On the frontend, a final "heat weight" is computed for each point by combining its elevation (lower areas are hotter) with modifiers from real-time weather (temperature, wind) and air quality data.
-
-- **Flood Heatmap Pipeline:** This pipeline provides a _relative inundation susceptibility proxy_. The backend calls the Weather API to get the current precipitation probability, which modulates the flood severity. It then generates a `20x20` grid and computes the "relative basin depth" for each point by finding the difference between the maximum elevation in the grid and the point's own elevation. The final weight is a function of this squared depth, amplifying deeper basins.
-
-- **Solar Potential Pipeline:** The `/api/solar-grid` endpoint calls the Google Solar API's `buildingInsights:findClosest` endpoint on a grid around the target location. It deduplicates the returned buildings by their identifiers and sends a list of valid solar candidates to the frontend for rendering as a scatterplot.
-
-- **Multimodal AI Analysis:** The `/api/analyze` and `/api/generate-report` endpoints are the AI core. The `analyze` endpoint provides a rapid assessment using only a Street View image, returning a 4-key JSON with scores. The `generate-report` endpoint is fully multimodal, feeding Gemini a combination of Street View imagery, satellite imagery, and structured numeric data (like AQI, wind speed, and flood probability) to generate a comprehensive, structured JSON report.
-
-#### 2.2 Innovation
-
-The project's innovation lies in several key areas that combine to create a novel user experience:
-
-1.  **Lightweight Environmental Proxy Models:** Instead of relying on complex and slow hydrological or meteorological models, CityPulse AI uses clever, real-time proxies. For example, flood risk is modeled as a function of _topography and live rain probability_, and heat risk is modeled as a function of _elevation and live weather_. This is what makes the near-real-time interactivity possible.
-
-2.  **Structured AI Output for UI Consumption:** The Gemini prompts are explicitly designed to return machine-readable **JSON** (scores, risks, recommendations) rather than unstructured text. This is a crucial engineering decision that enables a consistent, reliable UI presentation and allows for future extensions without needing to parse natural language on the frontend.
-
-3.  **Human-Centric Data Visualization:** Several UX-focused innovations were implemented based on user feedback. The backend uses **stochastic jittering** to transform rigid data grids into an organic "thermal cloud." The frontend uses **adaptive opacity and thresholding** on heatmaps to prevent visual overload and ensure 3D building textures remain visible for spatial orientation.
-
-#### 2.3 Challenges Faced
-
-The primary technical challenge encountered was a critical performance issue when integrating Deck.gl with Google Maps Photorealistic 3D Tiles.
-
-- **The Challenge:** When both Deck.gl and the Google Maps 3D Tiles engine were active, they attempted to "interleave" their rendering operations on the same WebGL context. This led to a `WebGL: INVALID_OPERATION: drawBuffers` error, as they conflicted over memory buffer attachments. The browser would hang, and the frame rate would drop to under 5fps, making the application unusable.
-
-- **Technical Decision & Resolution:** The critical decision was to disable interleaving by setting `interleaved: false` in the `GoogleMapsOverlay` configuration. This forced the browser to create a separate, synchronized WebGL canvas specifically for the Deck.gl data layers. While this required more complex manual synchronization code to keep the layers perfectly aligned during camera movements, it permanently resolved the hardware-level conflict and eliminated the system lag, restoring a consistent 60fps experience.
-
-## 🚀 4. Getting Started
-
-Follow these steps to set up and run the project locally on your machine.
-
-### 4.1 Prerequisites
-
-- **Node.js:** v20.0 or later (v20.9.0+ recommended)
-- **Package Manager:** npm, yarn, or pnpm
-- **Google Cloud Account:** A project with billing enabled to access the Environment APIs.
-
-### 4.2 Installation
-
-1. **Clone the Repository**
-
-   ```bash
-   git clone https://github.com/your-username/citypulse-ai.git
-   cd citypulse-ai
-
-   ```
-
-2. **Install Dependencies**
-   In your terminal, run the following command to install all necessary libraries:
-   ```bash
-   npm install
-   ```
-
-### 4.3 Configuration
-
-1. **Create a file named `.env.local` in the root directory of the project.**
-
-2. **Ensure the following APIs are **enabled** in your Google Cloud Console:**
-   - **NEXT_PUBLIC_GOOGLE_MAPS_API_KEY**  
-     _(Your Google Maps Platform API Key)_
-
-   - **NEXT_PUBLIC_MAP_ID**  
-     _(Your Vector Map ID created in Google Maps Platform)_
-
-   - **GEMINI_API_KEY**  
-     _(Your Gemini API Key for Gemini 2.5 integration)_
-
-3. **Add Environment Variables**
-
-   Add your API keys to the `.env.local` file as shown below:
-
-   ```env
-   # Google Maps Platform API Key
-   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="YOUR_MAPS_API_KEY"
-
-   # Vector Map ID (Created in Google Maps Management)
-   NEXT_PUBLIC_MAP_ID="YOUR_MAP_ID"
-
-   # Gemini API Key (From Google AI Studio)
-   GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
-   ```
-
-### 4.4 Running the Development Server
-
-    Start the local development environment:
-
-    ```bash
-    npm run dev
-    ```
-
-## 📄 5. License
-
-This project is licensed under the MIT License – see the `LICENSE` file for details.
+- Built with **Next.js 15** and **Tailwind CSS v4**
+- Uses **Deck.gl** for high-resolution geospatial overlays
+- Renders on **Google Maps Photorealistic 3D Tiles** via WebGL
+- Provides real-time, interactive environmental visualization
 
 ---
 
-## ❤️ 6. Acknowledgements
+## ⚙️ Backend (Data Orchestration Layer)
 
-Built entirely on the powerful and integrated ecosystem of Google Developer Technology.
+- Stateless **Next.js App Router API**
+- Handles:
+  - Server-side data fetching
+  - API key protection
+  - Data normalization & aggregation
+- Designed for scalability and low-latency batch processing
 
-- **Next.js 15 & React** – High-performance application framework
-- **Deck.gl** – WebGL-accelerated data visualization layers
-- **Google Gemini** – Multimodal intelligence behind our urban audits
-- **KitaHack 2026** – Inspiration to build for the Sustainable Development Goals
+---
+
+## 🧠 Intelligence Layer
+
+- **Gemini 1.5 Pro** performs multimodal vision analysis and environmental reasoning
+- **Google Maps Environment APIs** provide scientific ground truth data
+- Outputs structured JSON insights for frontend visualization
+
+## 🛠️ 2. Implementation Details
+
+---
+
+## 2.1 Core Data Pipelines & Scientific Logic
+
+Instead of relying on static layers, our engine performs **Real-Time Data Fusion** to dynamically generate environmental risk models.
+
+---
+
+### 🌡️ Thermal Pulse (SDG 11)
+
+Performs a **144-node topographical scan** to calculate localized heat stagnation:
+
+\[
+W*{thermal} = \frac{T*{ambient}}{10} + (H*{max} - H*{point}) \times 0.5
+\]
+
+**Where:**
+
+- \(T\_{ambient}\) = Real-time temperature from Google Weather API
+- \(H\_{max}\) = Maximum elevation in scan radius
+- \(H\_{point}\) = Elevation at selected coordinate (Google Elevation API)
+
+This models micro heat traps caused by terrain variation and thermal mass accumulation.
+
+---
+
+### 🌊 Flood Guardian (SDG 11)
+
+A hydrological vulnerability model that detects **Topographical Depressions (Basins)** and scales risk using live precipitation data:
+
+\[
+W*{flood} = (H*{max} - H*{point})^2 \times \left(1 + \frac{P*{rain}}{50}\right)
+\]
+
+**Where:**
+
+- \(H\_{max}\) = Highest elevation in local radius
+- \(H\_{point}\) = Ground elevation at target coordinate
+- \(P\_{rain}\) = Precipitation probability (Google Weather API)
+
+This amplifies flood risk in low-lying areas during high rainfall probability.
+
+---
+
+### ☀️ Solar Goldmine (SDG 13)
+
+- Integrates the **Google Solar API**
+- Performs high-resolution rooftop geometry analysis
+- Calculates projected annual **RM savings** based on local energy tariffs
+- Generates ROI insights for homeowners
+
+---
+
+### 🧠 Multimodal AI Audit (SDG 3)
+
+- Combines **Google Street View Static API**
+- Processes imagery using **Gemini 1.5 Pro**
+- AI analyzes urban fabric (walkability, shading, density, infrastructure condition)
+- Outputs a structured environmental & safety scorecard
+
+---
+
+## 2.2 Impact (Cause and Effect)
+
+### 🌞 Renewable Energy Adoption (SDG 13)
+
+**Cause:**  
+Providing real-time RM savings projections via the Google Solar API.
+
+**Effect:**  
+Reduces the _information gap_ for homeowners, increasing measurable intent to transition to renewable energy.
+
+---
+
+### 🌳 Targeted Urban Cooling (SDG 11)
+
+**Cause:**  
+Visualizing "Critical" heat zones through topographical synthesis.
+
+**Effect:**  
+Empowers city councils to prioritize urban greening (tree planting and cooling corridors) in high thermal-mass zones.
+
+## 🧪 3. Feedback, Testing & Iteration
+
+Conducted usability testing with **5 university students and local residents** using the **“Think Aloud” protocol**.
+
+---
+
+### 🎨 Feedback: Visual Overload
+
+**Issue:**  
+High-intensity heatmaps were overwhelming. Solid color overlays obscured 3D buildings, reducing spatial orientation.
+
+**Implementation:**  
+Developed a **Dynamic Transparency Engine** with a noise-gate threshold to preserve architectural textures while maintaining data clarity.
+
+---
+
+### 🟦 Feedback: Robotic Patterns
+
+**Issue:**  
+Thermal layers appeared in rigid square grids, making the visualization feel artificial and computer-generated.
+
+**Implementation:**  
+Introduced **Backend Stochastic Jittering** within API routes to generate organic, cloud-like thermal diffusion patterns.
+
+---
+
+### ⚡ Feedback: Performance Stutter (Lag)
+
+**Issue:**  
+3D map panning with active overlays caused frame drops on standard laptops.
+
+**Implementation:**
+
+- Implemented **BBox (Bounding Box) Caching** via `localStorage`
+- Throttled React state updates
+- Optimized rendering pipeline to maintain a consistent **60 FPS experience**
+
+---
+
+## 🚧 4. Technical Challenges & Decisions
+
+### **Challenge 1: The WebGL Context Conflict (Graphics)**
+
+Integrating **Deck.gl** with **Google Maps Photorealistic 3D Tiles** initially caused a critical `WebGL: INVALID_OPERATION: drawBuffers` error. Because both engines attempted to "interleave" (sharing the same GPU render loop), they conflicted over memory buffer attachments. This led to a significant performance degradation, dropping the frame rate from 60 FPS to under 5 FPS and occasionally causing the browser to hang.
+
+- **Resolution:** I made the strategic decision to set `interleaved: false` in our `GoogleMapsOverlay` configuration. This forced the browser to create a separate, synchronized WebGL canvas specifically for our data layers, effectively isolating the memory pools. To maintain visual sync, I implemented custom state-throttling logic to ensure the data overlays perfectly followed the 3D terrain during high-speed camera movements.
+
+### **Challenge 2: AI Output Integrity & Imagery Resilience (AI)**
+
+We encountered two major hurdles with the **Gemini 1.5 Pro** integration. First, the AI frequently included conversational markdown text and backticks (e.g., ` ```json `) instead of a pure JSON object, which crashed the frontend parser. Second, many residential coordinates in Malaysia lacked immediate Street View coverage, resulting in "404 Not Found" errors for the AI's visual input.
+
+- **Resolution:**
+  1.  **Regex Extraction Engine:** I implemented a backend extraction layer using Regular Expressions (`/\{[\s\S]*\}/`) to isolate valid JSON strings from the AI's response before parsing.
+  2.  **Recursive Radius Expansion:** I developed an automated "scouting" algorithm that probes the **Street View Metadata API** in expanding circles (from 0m to 6.4km). This ensures the engine always locates the nearest valid outdoor imagery to analyze, preventing the AI audit from failing in low-coverage or rural areas.
+
+## 🗺️ 5. Future Roadmap
+
+- **Asynchronous AI Processing**: Transition Gemini report generation to Server-Sent Events (SSE) to stream results token-by-token for lower perceived latency.
+- **Real-time Sensor Ingestion**: Integrate Google Cloud Pub/Sub to ingest live traffic and localized flood sensor data from local authorities.
+- **Heat-Optimized Wayfinding**: Utilize the Google Routes API to provide "cool-path" navigation, helping pedestrians avoid high-heat-mass streets.
+
+## 🚀 6. Getting Started
+
+### 6.1 Prerequisites
+
+- **Node.js**: v20.x or later
+- **Google Cloud Project**: Enable Maps JS, Map Tiles, Solar, Weather, Air Quality, and Elevation APIs.
+
+### 6.2 Installation
+
+```bash
+git clone https://github.com/your-username/citypulse-ai.git
+cd citypulse-ai
+npm install --legacy-peer-deps
+npm run dev
+```
