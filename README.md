@@ -15,8 +15,6 @@ The system utilizes a **Decoupled Full-Stack Architecture** designed for high pe
 - Renders on **Google Maps Photorealistic 3D Tiles** via WebGL
 - Provides real-time, interactive environmental visualization
 
----
-
 ## ⚙️ Backend (Data Orchestration Layer)
 
 - Stateless **Next.js App Router API**
@@ -26,8 +24,6 @@ The system utilizes a **Decoupled Full-Stack Architecture** designed for high pe
   - Data normalization & aggregation
 - Designed for scalability and low-latency batch processing
 
----
-
 ## 🧠 Intelligence Layer
 
 - **Gemini 1.5 Pro** performs multimodal vision analysis and environmental reasoning
@@ -36,13 +32,9 @@ The system utilizes a **Decoupled Full-Stack Architecture** designed for high pe
 
 ## 🛠️ 2. Implementation Details
 
----
-
 ## 2.1 Core Data Pipelines & Scientific Logic
 
 Instead of relying on static layers, our engine performs **Real-Time Data Fusion** to dynamically generate environmental risk models.
-
----
 
 ### 🌡️ Thermal Pulse (SDG 11)
 
@@ -60,8 +52,6 @@ W*{thermal} = \frac{T*{ambient}}{10} + (H*{max} - H*{point}) \times 0.5
 
 This models micro heat traps caused by terrain variation and thermal mass accumulation.
 
----
-
 ### 🌊 Flood Guardian (SDG 11)
 
 A hydrological vulnerability model that detects **Topographical Depressions (Basins)** and scales risk using live precipitation data:
@@ -78,8 +68,6 @@ W*{flood} = (H*{max} - H*{point})^2 \times \left(1 + \frac{P*{rain}}{50}\right)
 
 This amplifies flood risk in low-lying areas during high rainfall probability.
 
----
-
 ### ☀️ Solar Goldmine (SDG 13)
 
 - Integrates the **Google Solar API**
@@ -87,16 +75,12 @@ This amplifies flood risk in low-lying areas during high rainfall probability.
 - Calculates projected annual **RM savings** based on local energy tariffs
 - Generates ROI insights for homeowners
 
----
-
 ### 🧠 Multimodal AI Audit (SDG 3)
 
 - Combines **Google Street View Static API**
 - Processes imagery using **Gemini 1.5 Pro**
 - AI analyzes urban fabric (walkability, shading, density, infrastructure condition)
 - Outputs a structured environmental & safety scorecard
-
----
 
 ## 2.2 Impact (Cause and Effect)
 
@@ -107,8 +91,6 @@ Providing real-time RM savings projections via the Google Solar API.
 
 **Effect:**  
 Reduces the _information gap_ for homeowners, increasing measurable intent to transition to renewable energy.
-
----
 
 ### 🌳 Targeted Urban Cooling (SDG 11)
 
@@ -122,8 +104,6 @@ Empowers city councils to prioritize urban greening (tree planting and cooling c
 
 Conducted usability testing with **5 university students and local residents** using the **“Think Aloud” protocol**.
 
----
-
 ### 🎨 Feedback: Visual Overload
 
 **Issue:**  
@@ -132,8 +112,6 @@ High-intensity heatmaps were overwhelming. Solid color overlays obscured 3D buil
 **Implementation:**  
 Developed a **Dynamic Transparency Engine** with a noise-gate threshold to preserve architectural textures while maintaining data clarity.
 
----
-
 ### 🟦 Feedback: Robotic Patterns
 
 **Issue:**  
@@ -141,8 +119,6 @@ Thermal layers appeared in rigid square grids, making the visualization feel art
 
 **Implementation:**  
 Introduced **Backend Stochastic Jittering** within API routes to generate organic, cloud-like thermal diffusion patterns.
-
----
 
 ### ⚡ Feedback: Performance Stutter (Lag)
 
@@ -154,8 +130,6 @@ Introduced **Backend Stochastic Jittering** within API routes to generate organi
 - Implemented **BBox (Bounding Box) Caching** via `localStorage`
 - Throttled React state updates
 - Optimized rendering pipeline to maintain a consistent **60 FPS experience**
-
----
 
 ## 🚧 4. Technical Challenges & Decisions
 
@@ -191,6 +165,6 @@ We encountered two major hurdles with the **Gemini 1.5 Pro** integration. First,
 ```bash
 git clone https://github.com/your-username/citypulse-ai.git
 cd citypulse-ai
-npm install --legacy-peer-deps
+npm install
 npm run dev
 ```
