@@ -107,23 +107,11 @@ Create a file named `.env.local` in the root directory of the project.
 
 Ensure the following APIs are **enabled** in your Google Cloud Console:
 
-- **Maps JavaScript API**  
-  _(Ensure a Vector Map ID is created)_
+- **NEXT_PUBLIC_GOOGLE_MAPS_API_KEY**  
+  _(Your Google Maps Platform API Key)_
 
-- **Map Tiles API**  
-  _(Required for Photorealistic 3D Tiles)_
+- **NEXT_PUBLIC_MAP_ID**  
+  _(Your Vector Map ID created in Google Maps Platform)_
 
-- **Elevation API**
-
-- **Weather API**
-
-- **Air Quality API**
-
-- **Solar API**
-
-- **Generative Language API**  
-  _(Required for Gemini 2.5 integration)_
-
-```
-
-```
+- **GEMINI_API_KEY**  
+  _(Your Gemini API Key for Gemini 2.5 integration)_
