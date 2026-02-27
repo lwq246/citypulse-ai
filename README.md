@@ -101,6 +101,29 @@ Follow these steps to set up and run the project locally on your machine.
    npm install
    ```
 
+### 4.3 Configuration
+
+Create a file named `.env.local` in the root directory of the project.
+
+Ensure the following APIs are **enabled** in your Google Cloud Console:
+
+- **Maps JavaScript API**  
+  _(Ensure a Vector Map ID is created)_
+
+- **Map Tiles API**  
+  _(Required for Photorealistic 3D Tiles)_
+
+- **Elevation API**
+
+- **Weather API**
+
+- **Air Quality API**
+
+- **Solar API**
+
+- **Generative Language API**  
+  _(Required for Gemini 2.5 integration)_
+
 ```
 
 ```
