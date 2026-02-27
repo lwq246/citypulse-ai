@@ -2,6 +2,9 @@
 
 **KitaHack 2026 — Addressing SDG 3 (Health), 11 (Sustainable Cities), and 13 (Climate Action)**
 
+- **Team Name:** Human Intelligence
+- **GDGoC Chapter:** Universiti Malaya
+
 CityPulse AI is an AI-first urban intelligence system that transforms Google’s 3D city model into a living sustainability dashboard. By visualizing "invisible" environmental risks—such as the Urban Heat Island effect and topographical flood basins—we provide citizens and planners with the data needed to build a more resilient city.
 
 ## 🏗️ 1. Technical Architecture
@@ -12,7 +15,7 @@ The system utilizes a **Decoupled Full-Stack Architecture** designed for high pe
 
 ## 🖥️ Frontend (Rendering Engine)
 
-- Built with **Next.js 15** and **Tailwind CSS v4**
+- Built with **Next.js 16** and **Tailwind CSS v4**
 - Uses **Deck.gl** for high-resolution geospatial overlays
 - Renders on **Google Maps Photorealistic 3D Tiles** via WebGL
 - Provides real-time, interactive environmental visualization
@@ -28,7 +31,7 @@ The system utilizes a **Decoupled Full-Stack Architecture** designed for high pe
 
 ## 🧠 Intelligence Layer
 
-- **Gemini 1.5 Pro** performs multimodal vision analysis and environmental reasoning
+- **Gemini 2.5 Flash Lite** performs multimodal vision analysis and environmental reasoning
 - **Google Maps Environment APIs** provide scientific ground truth data
 - Outputs structured JSON insights for frontend visualization
 
