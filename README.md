@@ -132,8 +132,23 @@ Follow these steps to set up and run the project locally on your machine.
 
 ### 4.4 Running the Development Server
 
-Start the local development environment:
+    Start the local development environment:
 
-```bash
-npm run dev
-```
+    ```bash
+    npm run dev
+    ```
+
+## 📄 5. License
+
+This project is licensed under the MIT License – see the `LICENSE` file for details.
+
+---
+
+## ❤️ 6. Acknowledgements
+
+Built entirely on the powerful and integrated ecosystem of Google Developer Technology.
+
+- **Next.js 15 & React** – High-performance application framework
+- **Deck.gl** – WebGL-accelerated data visualization layers
+- **Google Gemini** – Multimodal intelligence behind our urban audits
+- **KitaHack 2026** – Inspiration to build for the Sustainable Development Goals
