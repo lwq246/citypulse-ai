@@ -6,6 +6,8 @@ CityPulse AI is an AI-first urban intelligence system that transforms Google’s
 
 ## 🏗️ 1. Technical Architecture
 
+![Project Screenshot](./public/architecture.png)
+
 The system utilizes a **Decoupled Full-Stack Architecture** designed for high performance and high-fidelity geospatial visualization.
 
 ## 🖥️ Frontend (Rendering Engine)
