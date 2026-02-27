@@ -130,6 +130,10 @@ Follow these steps to set up and run the project locally on your machine.
    GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
    ```
 
-```
+### 4.4 Running the Development Server
 
+Start the local development environment:
+
+```bash
+npm run dev
 ```
