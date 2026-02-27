@@ -127,23 +127,23 @@ Introduced **Backend Stochastic Jittering** within API routes to generate organi
 
 - Implemented **BBox (Bounding Box) Caching** via `localStorage`
 - Throttled React state updates
-- Optimized rendering pipeline to maintain a consistent **60 FPS experience**
+- Optimized rendering pipeline
 
 ## 🚧 4. Technical Challenges & Decisions
 
 ### **Challenge 1: The WebGL Context Conflict (Graphics)**
 
-Integrating **Deck.gl** with **Google Maps Photorealistic 3D Tiles** initially caused a critical `WebGL: INVALID_OPERATION: drawBuffers` error. Because both engines attempted to "interleave" (sharing the same GPU render loop), they conflicted over memory buffer attachments. This led to a significant performance degradation, dropping the frame rate from 60 FPS to under 5 FPS and occasionally causing the browser to hang.
+Integrating **Deck.gl** with **Google Maps Photorealistic 3D Tiles** initially caused a critical `WebGL: INVALID_OPERATION: drawBuffers` error. Because both engines attempted to "interleave" (sharing the same GPU render loop), they conflicted over memory buffer attachments. This led to a significant performance degradation.
 
 - **Resolution:** I made the strategic decision to set `interleaved: false` in our `GoogleMapsOverlay` configuration. This forced the browser to create a separate, synchronized WebGL canvas specifically for our data layers, effectively isolating the memory pools. To maintain visual sync, I implemented custom state-throttling logic to ensure the data overlays perfectly followed the 3D terrain during high-speed camera movements.
 
 ### **Challenge 2: AI Output Integrity & Imagery Resilience (AI)**
 
-We encountered two major hurdles with the **Gemini 1.5 Pro** integration. First, the AI frequently included conversational markdown text and backticks (e.g., ` ```json `) instead of a pure JSON object, which crashed the frontend parser. Second, many residential coordinates in Malaysia lacked immediate Street View coverage, resulting in "404 Not Found" errors for the AI's visual input.
+We encountered two major hurdles with the **Gemini 2.5 Flash Lite** integration. First, the AI frequently included conversational markdown text and backticks (e.g., ` ```json `) instead of a pure JSON object, which crashed the frontend parser. Second, many residential coordinates in Malaysia lacked immediate Street View coverage, resulting in "404 Not Found" errors for the AI's visual input.
 
 - **Resolution:**
   1.  **Regex Extraction Engine:** I implemented a backend extraction layer using Regular Expressions (`/\{[\s\S]*\}/`) to isolate valid JSON strings from the AI's response before parsing.
-  2.  **Recursive Radius Expansion:** I developed an automated "scouting" algorithm that probes the **Street View Metadata API** in expanding circles (from 0m to 6.4km). This ensures the engine always locates the nearest valid outdoor imagery to analyze, preventing the AI audit from failing in low-coverage or rural areas.
+  2.  **Recursive Radius Expansion:** I developed an automated "scouting" algorithm that probes the **Street View Metadata API** in expanding circles. This ensures the engine always locates the nearest valid outdoor imagery to analyze, preventing the AI audit from failing in low-coverage or rural areas.
 
 ## 🗺️ 5. Future Roadmap
 
@@ -161,7 +161,7 @@ We encountered two major hurdles with the **Gemini 1.5 Pro** integration. First,
 ### 6.2 Installation
 
 ```bash
-git clone https://github.com/your-username/citypulse-ai.git
+git clone https://github.com/lwq246/citypulse-ai.git
 cd citypulse-ai
 npm install
 npm run dev
