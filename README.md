@@ -75,6 +75,32 @@ The primary technical challenge encountered was a critical performance issue whe
 
 - **Technical Decision & Resolution:** The critical decision was to disable interleaving by setting `interleaved: false` in the `GoogleMapsOverlay` configuration. This forced the browser to create a separate, synchronized WebGL canvas specifically for the Deck.gl data layers. While this required more complex manual synchronization code to keep the layers perfectly aligned during camera movements, it permanently resolved the hardware-level conflict and eliminated the system lag, restoring a consistent 60fps experience.
 
+## 🚀 4. Getting Started
+
+Follow these steps to set up and run the project locally on your machine.
+
+### 4.1 Prerequisites
+
+- **Node.js:** v20.0 or later (v20.9.0+ recommended)
+- **Package Manager:** npm, yarn, or pnpm
+- **Google Cloud Account:** A project with billing enabled to access the Environment APIs.
+
+### 4.2 Installation
+
+1. **Clone the Repository**
+
+   ```bash
+   git clone https://github.com/your-username/citypulse-ai.git
+   cd citypulse-ai
+
+   ```
+
+2. **4.2 Install Dependencies**
+   In your terminal, run the following command to install all necessary libraries:
+   ```bash
+   npm install
+   ```
+
 ```
 
 ```
