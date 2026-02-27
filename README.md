@@ -40,15 +40,13 @@ Instead of relying on static layers, our engine performs **Real-Time Data Fusion
 
 Performs a **144-node topographical scan** to calculate localized heat stagnation:
 
-\[
-W*{thermal} = \frac{T*{ambient}}{10} + (H*{max} - H*{point}) \times 0.5
-\]
+$$W_{thermal} = \frac{T_{ambient}}{10} + (H_{max} - H_{point}) \times 0.5$$
 
 **Where:**
 
-- \(T\_{ambient}\) = Real-time temperature from Google Weather API
-- \(H\_{max}\) = Maximum elevation in scan radius
-- \(H\_{point}\) = Elevation at selected coordinate (Google Elevation API)
+- **$T_{ambient}$**: Real-time ambient temperature (Celsius) fetched from the **Google Weather API**.
+- **$H_{max}$**: The maximum elevation identified within the 1.5km scan radius.
+- **$H_{point}$**: The ground elevation at the specific node fetched from the **Google Elevation API**.
 
 This models micro heat traps caused by terrain variation and thermal mass accumulation.
 
