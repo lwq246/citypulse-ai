@@ -95,7 +95,7 @@ Follow these steps to set up and run the project locally on your machine.
 
    ```
 
-2. **4.2 Install Dependencies**
+2. **Install Dependencies**
    In your terminal, run the following command to install all necessary libraries:
    ```bash
    npm install
