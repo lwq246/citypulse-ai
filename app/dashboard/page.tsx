@@ -239,6 +239,18 @@ export default function Dashboard() {
 
   return (
     <main className="relative w-full h-screen overflow-hidden bg-[#0B1211] text-white font-sans">
+      {/* LAYER 0: THE MAP (Background) */}
+      <div className="absolute inset-0 z-0">
+        <MapBox
+          activeLayer={activeLayer}
+          targetLocation={targetLocation}
+          envData={envData} // <--- PASS THIS
+          onMapClick={updateTargetLocation}
+          onMapLoad={(map) => {
+            mapInstanceRef.current = map;
+          }}
+        />
+      </div>
       {/* LAYER 1: TOP HUD (Sidebar, Search, Status) */}
       {/* This layer is just for the items at the top edge */}
       <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
@@ -251,59 +263,6 @@ export default function Dashboard() {
             <ArrowLeft size={18} />
             <span className="text-sm font-semibold">Back</span>
           </Link>
-          <Sidebar activeLayer={activeLayer} setActiveLayer={setActiveLayer} />
-        </div>
-
-        <div className="flex-1 flex justify-center pointer-events-auto px-4">
-          <SearchBar onLocationSelect={updateTargetLocation} />
-        </div>
-
-        <div className="flex flex-col items-end gap-4 pointer-events-auto">
-          <StatusWidgets
-            aqi={envData.aqi}
-            temp={envData.temp}
-            status={envData.status}
-          />
-          <div className="bg-[#141E1C]/80 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full shadow-2xl">
-            <span className="text-[10px] text-gray-400 uppercase tracking-widest mr-2 font-bold">
-              Active Region
-            </span>
-            <span className="text-xs font-bold text-[#06D6A0]">
-              {targetLocation.name}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* LAYER 0: THE MAP (Background) */}
-      <div className="absolute inset-0 z-0">
-        <MapBox
-          activeLayer={activeLayer}
-          targetLocation={targetLocation}
-          envData={envData} // <--- PASS THIS
-          onMapClick={updateTargetLocation}
-          onMapLoad={(map) => {
-            mapInstanceRef.current = map;
-          }}
-        />
-      </div>
-      {/* LAYER 0: THE MAP (Background) */}
-      <div className="absolute inset-0 z-0">
-        <MapBox
-          activeLayer={activeLayer}
-          targetLocation={targetLocation}
-          envData={envData} // <--- PASS THIS
-          onMapClick={updateTargetLocation}
-          onMapLoad={(map) => {
-            mapInstanceRef.current = map;
-          }}
-        />
-      </div>
-
-      {/* LAYER 1: TOP HUD (Sidebar, Search, Status) */}
-      {/* This layer is just for the items at the top edge */}
-      <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-20 pointer-events-none">
-        <div className="pointer-events-auto">
           <Sidebar activeLayer={activeLayer} setActiveLayer={setActiveLayer} />
         </div>
 

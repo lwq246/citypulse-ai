@@ -1,19 +1,19 @@
-'use client';
-import { motion, AnimatePresence } from 'framer-motion';
+"use client";
+import UrbanReportModal from "@/components/UrbanReportModal";
+import type { UrbanReportJSON } from "@/types/urbanReport";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   CheckCircle2,
   FileText,
   Footprints,
+  Loader2,
   MapPin,
+  RefreshCw,
   Sparkles,
   X,
-  Loader2,
-  RefreshCw,
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
-import UrbanReportModal from '@/components/UrbanReportModal';
-import type { UrbanReportJSON } from '@/types/urbanReport';
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface AIAnalysisPanelProps {
   data: {
@@ -53,11 +53,11 @@ export default function AIAnalysisPanel({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const loadingSteps = [
-    'Initiating AI Engine...',
-    'Synthesizing Environmental Data...',
-    'Evaluating Walkability & Canopy...',
-    'Drafting Executive Summary...',
-    'Finalizing PDF Report...',
+    "Initiating AI Engine...",
+    "Synthesizing Environmental Data...",
+    "Evaluating Walkability & Canopy...",
+    "Drafting Executive Summary...",
+    "Finalizing PDF Report...",
   ];
 
   useEffect(() => {
@@ -76,9 +76,9 @@ export default function AIAnalysisPanel({
     setLoadingStep(0);
 
     try {
-      const response = await fetch('/api/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/generate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           locationName,
           lat,
@@ -87,8 +87,8 @@ export default function AIAnalysisPanel({
           shadeScore: data.shadeScore,
           aqi: envData?.aqi || 0,
           temp: envData?.temp || 0,
-          solarPotential: solarData?.potential || 'Unknown',
-          floodRiskLevel: floodData?.riskLevel || 'Unknown',
+          solarPotential: solarData?.potential || "Unknown",
+          floodRiskLevel: floodData?.riskLevel || "Unknown",
         }),
       });
 
@@ -99,12 +99,12 @@ export default function AIAnalysisPanel({
         setShowReportModal(true);
       } else {
         setErrorMsg(
-          result.error || 'Engine failure: Could not generate report',
+          result.error || "Engine failure: Could not generate report",
         );
       }
     } catch (error) {
-      console.error('Report generation error:', error);
-      setErrorMsg('Network error: Failed to connect to AI engine');
+      console.error("Report generation error:", error);
+      setErrorMsg("Network error: Failed to connect to AI engine");
     } finally {
       setIsReportLoading(false);
     }
@@ -123,10 +123,10 @@ export default function AIAnalysisPanel({
   return (
     <>
       <motion.div
-        initial={{ x: '100%', opacity: 0 }}
+        initial={{ x: "100%", opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        exit={{ x: '100%', opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        exit={{ x: "100%", opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
         className="fixed right-0 top-0 h-full w-[420px] bg-[#0B1211]/98 backdrop-blur-3xl border-l border-white/10 z-[100] shadow-[-20px_0_80px_rgba(0,0,0,0.8)] flex flex-col p-8 overflow-y-auto pointer-events-auto no-scrollbar"
       >
         {/* 1. HEADER */}
@@ -134,7 +134,7 @@ export default function AIAnalysisPanel({
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-[#06D6A0] rounded-full animate-pulse shadow-[0_0_8px_#06D6A0]" />
             <span className="text-[10px] font-bold text-[#06D6A0] tracking-[0.2em] uppercase italic">
-              Live Analysis 
+              Live Analysis
             </span>
           </div>
           <button
@@ -187,13 +187,13 @@ export default function AIAnalysisPanel({
           <div className="bg-[#06D6A0] text-[#0B1211] px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
             <CheckCircle2 size={12} strokeWidth={3} />
             <span className="text-[9px] font-black uppercase tracking-wider">
-              {shadeScore > 40 ? 'Vegetation Detected' : 'Low Canopy Density'}
+              {shadeScore > 40 ? "Vegetation Detected" : "Low Canopy Density"}
             </span>
           </div>
           <div className="bg-[#1A1A1A]/80 backdrop-blur-md text-white px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 border border-white/10 shadow-lg">
             <AlertTriangle size={12} className="text-yellow-500" />
             <span className="text-[9px] font-bold uppercase tracking-wider">
-              Heat Mass: {walkScore < 50 ? 'High' : 'Optimal'}
+              Heat Mass: {walkScore < 50 ? "High" : "Optimal"}
             </span>
           </div>
         </div>
@@ -209,14 +209,14 @@ export default function AIAnalysisPanel({
           <p className="text-[13px] text-gray-100 leading-[1.6] font-medium italic">
             {data.summary
               ? `"${data.summary}"`
-              : 'Generating neighborhood impact summary...'}
+              : "Generating neighborhood impact summary..."}
           </p>
           <div className="bg-[#06D6A0]/10 p-3.5 rounded-2xl border border-[#06D6A0]/20 mt-2">
             <span className="text-[#06D6A0] uppercase font-bold text-[9px] tracking-[0.1em] block mb-1">
               Recommended Mitigation:
             </span>
             <p className="text-[11px] text-white leading-[1.5]">
-              {data.recommendation || 'Analyzing urban design fixes...'}
+              {data.recommendation || "Analyzing urban design fixes..."}
             </p>
           </div>
         </div>
@@ -230,13 +230,13 @@ export default function AIAnalysisPanel({
             </span>
           </div>
           <span
-            className={`text-[9px] font-black px-3 py-1 rounded-md border uppercase tracking-widest ${walkScore > 70 ? 'bg-green-500/10 text-[#06D6A0] border-[#06D6A0]/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}
+            className={`text-[9px] font-black px-3 py-1 rounded-md border uppercase tracking-widest ${walkScore > 70 ? "bg-green-500/10 text-[#06D6A0] border-[#06D6A0]/20" : "bg-orange-500/10 text-orange-400 border-orange-500/20"}`}
           >
             {walkScore > 70
-              ? 'Excellent'
+              ? "Excellent"
               : walkScore > 40
-                ? 'Moderate'
-                : 'Critical'}
+                ? "Moderate"
+                : "Critical"}
           </span>
         </div>
 
@@ -254,7 +254,7 @@ export default function AIAnalysisPanel({
             <motion.circle
               initial={{ strokeDashoffset: circumference }}
               animate={{ strokeDashoffset: offset }}
-              transition={{ duration: 2, ease: 'circOut' }}
+              transition={{ duration: 2, ease: "circOut" }}
               cx="72"
               cy="72"
               r={radius}
