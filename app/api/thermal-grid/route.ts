@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { logApiMetric } from "@/utils/serverMetrics";
 
 export async function POST(req: Request) {
+  const startedAt = Date.now();
+
   try {
     const { lat, lng } = await req.json();
     const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -55,9 +58,24 @@ export async function POST(req: Request) {
 
     // console.log(`Thermal Scan Complete: ${combinedPoints.length} nodes processed at ${baseTemp}°C`);
 
+    logApiMetric({
+      route: "/api/thermal-grid",
+      status: 200,
+      success: true,
+      durationMs: Date.now() - startedAt,
+      extra: { pointCount: combinedPoints.length },
+    });
+
     return NextResponse.json(combinedPoints);
   } catch (error: any) {
     console.error("Backend error:", error.message);
+    logApiMetric({
+      route: "/api/thermal-grid",
+      status: 500,
+      success: false,
+      durationMs: Date.now() - startedAt,
+      extra: { error: error?.message || "unknown" },
+    });
     return NextResponse.json([]);
   }
 }

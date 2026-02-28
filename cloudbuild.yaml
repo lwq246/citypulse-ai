@@ -9,6 +9,8 @@ steps:
         "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$_MAP_KEY",
         "--build-arg",
         "NEXT_PUBLIC_MAP_ID=$_MAP_ID",
+        "--build-arg",
+        "NEXT_PUBLIC_GA_MEASUREMENT_ID=$_GA_MEASUREMENT_ID",
         ".",
       ]
 images:

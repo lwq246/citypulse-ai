@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
+import { logApiMetric } from "@/utils/serverMetrics";
 
 export async function POST(req: Request) {
+  const startedAt = Date.now();
+
   try {
     const { lat, lng } = await req.json();
     const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -62,10 +65,28 @@ export async function POST(req: Request) {
     console.log(`[FINAL PAYLOAD] Sent to Frontend:`, finalPayload);
     console.log(`--- [GOOGLE DATA] Done ---`);
 
+    logApiMetric({
+      route: "/api/google-data",
+      status: 200,
+      success: true,
+      durationMs: Date.now() - startedAt,
+      extra: {
+        weathercode,
+        hasAqi: Number.isFinite(finalPayload.aqi),
+      },
+    });
+
     return NextResponse.json(finalPayload);
 
   } catch (error: any) {
     console.error("!!! [ENVIRONMENTAL API ERROR]:", error.message);
+    logApiMetric({
+      route: "/api/google-data",
+      status: 500,
+      success: false,
+      durationMs: Date.now() - startedAt,
+      extra: { error: error?.message || "unknown" },
+    });
     return NextResponse.json({ aqi: 0, status: "Error", temp: 31.0, weathercode: 0 }, { status: 500 });
   }
 }
