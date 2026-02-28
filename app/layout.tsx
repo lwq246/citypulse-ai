@@ -1,8 +1,8 @@
+import GoogleMapsBootstrap from "@/components/GoogleMapsBootstrap";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,6 +31,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <GoogleMapsBootstrap />
+
         {gaMeasurementId ? (
           <>
             <Script

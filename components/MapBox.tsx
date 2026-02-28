@@ -2,13 +2,18 @@
 import { HeatmapLayer } from "@deck.gl/aggregation-layers";
 import { GoogleMapsOverlay } from "@deck.gl/google-maps";
 import { ScatterplotLayer } from "@deck.gl/layers";
-import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
+import { importLibrary } from "@googlemaps/js-api-loader";
 import { useEffect, useRef, useState } from "react";
 
 interface MapBoxProps {
   activeLayer: string;
   targetLocation: { lat: number; lng: number; name?: string };
-  envData?: { aqi: number; temp: number; windspeed: number; weathercode: number };
+  envData?: {
+    aqi: number;
+    temp: number;
+    windspeed: number;
+    weathercode: number;
+  };
   onMapClick?: (location: { lat: number; lng: number; name: string }) => void;
   onMapLoad?: (map: google.maps.Map) => void;
 }
@@ -62,7 +67,10 @@ export default function MapBox({
         );
       }
     } catch (error) {
-      console.warn("[CityPulse Maps] Unable to inspect map capabilities:", error);
+      console.warn(
+        "[CityPulse Maps] Unable to inspect map capabilities:",
+        error,
+      );
     }
   };
 
@@ -158,7 +166,10 @@ export default function MapBox({
           setThermalCache((prev) => {
             const nextCache = [...prev, nextEntry];
             setHeatData(collectCachedData(nextCache));
-            localStorage.setItem("citypulse-thermal-cache", JSON.stringify(nextCache));
+            localStorage.setItem(
+              "citypulse-thermal-cache",
+              JSON.stringify(nextCache),
+            );
             return nextCache;
           });
         }
@@ -185,7 +196,7 @@ export default function MapBox({
           }),
         });
         const data = await response.json();
-        console.log("FRONTEND RECEIVED DATA:", data.length);
+        // console.log("FRONTEND RECEIVED DATA:", data.length);
         if (Array.isArray(data)) {
           setRealSolarBuildings(data);
         }
@@ -225,7 +236,10 @@ export default function MapBox({
         setFloodCache((prev) => {
           const nextCache = [...prev, nextEntry];
           setFloodGridData(collectCachedData(nextCache));
-          localStorage.setItem("citypulse-flood-cache", JSON.stringify(nextCache));
+          localStorage.setItem(
+            "citypulse-flood-cache",
+            JSON.stringify(nextCache),
+          );
           return nextCache;
         });
       } catch (e) {
@@ -248,11 +262,6 @@ export default function MapBox({
   useEffect(() => {
     const initMap = async () => {
       logGraphicsAccelerationGuidance();
-
-      setOptions({
-        key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
-        version: "3.58", // Use a stable version to prevent breaking changes
-      } as any);
 
       try {
         const { Map } = (await importLibrary(
@@ -314,24 +323,34 @@ export default function MapBox({
 
                 instance.panTo({ lat, lng });
 
-                geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-                  if (status === "OK" && results && results[0] && onMapClick) {
-                    const components = results[0].address_components;
-                    const poi = components.find(
-                      (c) =>
-                        c.types.includes("point_of_interest") ||
-                        c.types.includes("establishment"),
-                    );
-                    const route = components.find((c) => c.types.includes("route"));
-                    let name = poi
-                      ? poi.long_name
-                      : route
-                        ? route.long_name
-                        : results[0].formatted_address.split(",")[0];
+                geocoder.geocode(
+                  { location: { lat, lng } },
+                  (results, status) => {
+                    if (
+                      status === "OK" &&
+                      results &&
+                      results[0] &&
+                      onMapClick
+                    ) {
+                      const components = results[0].address_components;
+                      const poi = components.find(
+                        (c) =>
+                          c.types.includes("point_of_interest") ||
+                          c.types.includes("establishment"),
+                      );
+                      const route = components.find((c) =>
+                        c.types.includes("route"),
+                      );
+                      let name = poi
+                        ? poi.long_name
+                        : route
+                          ? route.long_name
+                          : results[0].formatted_address.split(",")[0];
 
-                    onMapClick({ lat, lng, name });
-                  }
-                });
+                      onMapClick({ lat, lng, name });
+                    }
+                  },
+                );
               },
               () => {
                 // If geolocation fails or is denied, do nothing and wait for user input.
@@ -356,26 +375,31 @@ export default function MapBox({
               const lng = center.lng();
 
               // Reverse geocode to get the name of the new center
-              geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-                if (status === "OK" && results && results[0] && onMapClick) {
-                  const components = results[0].address_components;
-                  const poi = components.find(
-                    (c) =>
-                      c.types.includes("point_of_interest") ||
-                      c.types.includes("establishment"),
-                  );
-                  const route = components.find((c) => c.types.includes("route"));
-                  let name = poi
-                    ? poi.long_name
-                    : route
-                      ? route.long_name
-                      : results[0].formatted_address.split(",")[0];
-                  
-                  // Trigger the same update as a click
-                  onMapClick({ lat, lng, name });
-                }
-              });
-            }, 500); 
+              geocoder.geocode(
+                { location: { lat, lng } },
+                (results, status) => {
+                  if (status === "OK" && results && results[0] && onMapClick) {
+                    const components = results[0].address_components;
+                    const poi = components.find(
+                      (c) =>
+                        c.types.includes("point_of_interest") ||
+                        c.types.includes("establishment"),
+                    );
+                    const route = components.find((c) =>
+                      c.types.includes("route"),
+                    );
+                    let name = poi
+                      ? poi.long_name
+                      : route
+                        ? route.long_name
+                        : results[0].formatted_address.split(",")[0];
+
+                    // Trigger the same update as a click
+                    onMapClick({ lat, lng, name });
+                  }
+                },
+              );
+            }, 500);
           });
 
           // Keep the click listener for immediate updates
@@ -448,14 +472,14 @@ export default function MapBox({
             const avgKLHeight = 35;
             // Base weight from elevation
             let weight = Math.max(0.1, avgKLHeight - d.elevation + 5);
-            
+
             // Adjust weight based on real weather data
             // Higher base temp = higher overall weight
             // Higher wind = lower weight (cooling effect)
             // Higher AQI = higher weight (heat trapping)
-            const tempFactor = baseTemp / 30; 
-            weight = (weight * tempFactor * aqiPenalty) - windCooling;
-            
+            const tempFactor = baseTemp / 30;
+            weight = weight * tempFactor * aqiPenalty - windCooling;
+
             return Math.max(0.1, weight); // Ensure weight doesn't go negative
           },
 
@@ -501,9 +525,10 @@ export default function MapBox({
     // Inside MapBox.tsx -> Layer Engine
 
     if (activeLayer === "flood" && floodGridData.length > 0) {
-      
       // Weather codes for rain/drizzle/thunderstorm
-      const isRaining = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(envData?.weathercode || 0);
+      const isRaining = [
+        51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99,
+      ].includes(envData?.weathercode || 0);
       const rainMultiplier = isRaining ? 2.0 : 0.5; // Double risk if raining, halve if not
       const dryWeightScale = isRaining ? 1 : 0.2;
 
@@ -520,7 +545,10 @@ export default function MapBox({
               return Math.max(0.1, d.weight * dryWeightScale);
             }
 
-            if (typeof d.elevation === "number" && Number.isFinite(d.elevation)) {
+            if (
+              typeof d.elevation === "number" &&
+              Number.isFinite(d.elevation)
+            ) {
               const fallbackReferenceHeight = 45;
               const depth = Math.max(0, fallbackReferenceHeight - d.elevation);
               return Math.max(0.1, Math.pow(depth, 2) * rainMultiplier);
@@ -554,7 +582,15 @@ export default function MapBox({
     }
 
     overlayRef.current.setProps({ layers });
-  }, [activeLayer, heatData, zoom, timer, envData, floodGridData, realSolarBuildings]);
+  }, [
+    activeLayer,
+    heatData,
+    zoom,
+    timer,
+    envData,
+    floodGridData,
+    realSolarBuildings,
+  ]);
 
   // Handle Camera Movement
   useEffect(() => {

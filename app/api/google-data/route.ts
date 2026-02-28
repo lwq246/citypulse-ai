@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { logApiMetric } from "@/utils/serverMetrics";
+import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   const startedAt = Date.now();
