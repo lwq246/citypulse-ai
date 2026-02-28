@@ -35,12 +35,14 @@ export default function LandingPage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/10 blur-[120px] rounded-full -z-10" />
 
         <h1 className="text-5xl md:text-7xl font-bold max-w-4xl leading-tight tracking-tighter drop-shadow-2xl">
-          Visualizing a <span className="text-primary">Cooler, Greener</span>{" "}
+          AI-Powered Intelligence for a <br />
+          <span className="text-primary">Sustainable, Resilient</span> City
           <br /> Kuala Lumpur
         </h1>
         <p className="mt-6 text-gray-300 max-w-2xl text-lg leading-relaxed drop-shadow-md">
-          Harnessing data-driven urban planning to combat the heat island effect
-          and improve city livability through immersive spatial intelligence.
+          Deploying an <b>AI-powered Digital Twin</b> to combat the urban heat
+          island effect and mitigate flood risks through high-fidelity
+          geospatial intelligence and <b>Gemini 1.5 Pro</b> multimodal audits.
         </p>
 
         {/* CTA Button */}
@@ -59,7 +61,7 @@ export default function LandingPage() {
         <FeatureCard
           icon={<Thermometer className="text-[#06D6A0]" />}
           title="Thermal Pulse"
-          desc="Visualizing the Urban Heat Island effect through 100-node topographical grid scans and real-time Google Weather baseline data."
+          desc="Visualizing the Urban Heat Island effect through 144-node high-resolution topographical grid scans and real-time Google Weather baseline data."
           linkText="Explore Heatmaps"
         />
 
@@ -107,28 +109,30 @@ export default function LandingPage() {
       <section className="max-w-7xl mx-auto px-10 pb-40 grid md:grid-cols-2 gap-24 items-center relative z-10">
         <div>
           <h2 className="text-5xl font-bold leading-tight tracking-tighter italic drop-shadow-xl">
-            Live Data Integration
+            High-Fidelity Data Synthesis
           </h2>
           <p className="mt-8 text-gray-400 text-lg leading-relaxed">
-            Our platform aggregates real-time temperature sensors, satellite
-            vegetative indices, and urban canopy data to provide the most
-            accurate cooling potential maps for KL residents and city planners.
+            Our engine synthesizes real-time{" "}
+            <b>Google Environmental telemetry</b>, high-resolution{" "}
+            <b>3D topography</b>, and <b>Gemini 1.5 Pro vision analysis</b>
+            to map the invisible micro-climates of Kuala Lumpur with
+            street-level precision.
           </p>
           <div className="mt-12 flex gap-12">
             <div>
               <h4 className="text-primary text-4xl font-bold tracking-tighter">
-                3.2°C
+                144-Node
               </h4>
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-2">
-                Avg Heat Reduction
+                Grid Scan Resolution
               </p>
             </div>
             <div>
               <h4 className="text-primary text-4xl font-bold tracking-tighter">
-                120k+
+                6.4 km
               </h4>
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-2">
-                Trees Mapped
+                AI Audit Radius
               </p>
             </div>
           </div>

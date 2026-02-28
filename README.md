@@ -4,6 +4,7 @@
 
 - **Team Name:** Human Intelligence
 - **GDGoC Chapter:** Universiti Malaya
+- **Live Prototype:** [https://citypulse-ai-436170576354.asia-southeast1.run.app/](https://citypulse-ai-436170576354.asia-southeast1.run.app/)
 
 CityPulse AI is an AI-first urban intelligence system that transforms Google’s 3D city model into a living sustainability dashboard. By visualizing "invisible" environmental risks—such as the Urban Heat Island effect and topographical flood basins—we provide citizens and planners with the data needed to build a more resilient city.
 
