@@ -70,22 +70,11 @@ BASELINE SENSOR DATA:
 
 --- FEW-SHOT SCORING EXAMPLES (ACTUAL SAMPLES) ---
 
-WALKABILITY INDEX SCORING EXAMPLES (Visual Analysis):
-
-EXAMPLE 1 - HIGH WALKABILITY (Score: 88/100 - Excellent)
-Visual Cues: Wide sidewalks (3m+), clear pedestrian crossings with markings, separated from vehicle lanes by planters, mature trees, shops at ground level, low traffic speed
-Location Type: Mixed-use urban district (e.g., Bukit Bintang area)
-Reasoning: "The street view clearly shows dedicated pedestrian space, traffic calming, and active ground-floor uses. Excellent walkability."
-
-EXAMPLE 2 - MODERATE WALKABILITY (Score: 55/100 - Moderate)
-Visual Cues: Narrow sidewalks (1-1.5m), pedestrians walking close to traffic, some obstructions (poles, vendor stands), occasional trees
-Location Type: Secondary residential road
-Reasoning: "Pedestrian infrastructure exists but is constrained. Functional but not comfortable. Moderate score."
-
-EXAMPLE 3 - CRITICAL WALKABILITY (Score: 22/100 - Critical)
-Visual Cues: No visible sidewalk, high-speed road (highway), concrete barrier, no pedestrian crossing, barren vegetation
-Location Type: Highway or industrial area
-Reasoning: "No pedestrian infrastructure. Extremely hostile environment. Critical score."
+WALKABILITY INDEX INSTRUCTION:
+Use the provided baseline walkability value exactly for the final report.
+You must use provided baseline value exactly and do not recalculate or modify it based on imagery.
+You may still use visual observations only to explain the walkability condition in description text.
+Do not mention or reference "baseline", "initial estimate", "maintained", or score-adjustment process in any output text.
 
 SHADE COVERAGE SCORING EXAMPLES (Visual Analysis):
 
@@ -150,9 +139,10 @@ Reasoning: "Satellite shows clear flood risk from proximity to water. Street vie
 --- APPLICATION GUIDELINES ---
 1. Use the satellite image to identify large-scale green coverage patterns
 2. Use street view to assess shade comfort and pedestrian experience
-3. Adjust the baseline estimate UP if images show better conditions than the sensor suggests
-4. Adjust the baseline estimate DOWN if images show worse conditions than the sensor suggests
-5. Provide specific visual evidence in descriptions (e.g., "Mature trees observed in satellite" or "No sidewalk visible")
+3. For Walkability Index only, must use provided baseline value exactly and do not adjust.
+4. For non-walkability visual metrics (e.g., shade, solar, flood), adjust the baseline estimate UP if images show better conditions than the sensor suggests
+5. For non-walkability visual metrics (e.g., shade, solar, flood), adjust the baseline estimate DOWN if images show worse conditions than the sensor suggests
+6. Provide specific visual evidence in descriptions (e.g., "Mature trees observed in satellite" or "No sidewalk visible")
 ------------------------------------
 
 Based on your visual analysis of the images compared to these scoring examples, output the final report matching this EXACT JSON schema:
@@ -163,10 +153,10 @@ Based on your visual analysis of the images compared to these scoring examples, 
   "key_metrics": [
     {
       "label": "Walkability Index",
-      "value": <Your recalculated number based on visual evidence (compare to examples above)>,
+      "value": ${body.walkabilityScore},
       "unit": "/100",
       "status": "Excellent" | "Good" | "Moderate" | "Poor" | "Critical",
-      "description": "Brief description mentioning specific visual evidence (e.g., 'Lack of sidewalks visible on street level')"
+      "description": "Brief description mentioning specific visual evidence only (e.g., 'Sidewalks and pedestrian crossings are present but partially obstructed in street view'). Do not mention baseline or score maintenance."
     },
     {
       "label": "Shade Coverage",
