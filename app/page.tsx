@@ -42,7 +42,8 @@ export default function LandingPage() {
         <p className="mt-6 text-gray-300 max-w-2xl text-lg leading-relaxed drop-shadow-md">
           Deploying an <b>AI-powered Digital Twin</b> to combat the urban heat
           island effect and mitigate flood risks through high-fidelity
-          geospatial intelligence and <b>Gemini 1.5 Pro</b> multimodal audits.
+          geospatial intelligence and <b>Gemini 2.5 Flash Lite</b> multimodal
+          audits.
         </p>
 
         {/* CTA Button */}
@@ -114,9 +115,9 @@ export default function LandingPage() {
           <p className="mt-8 text-gray-400 text-lg leading-relaxed">
             Our engine synthesizes real-time{" "}
             <b>Google Environmental telemetry</b>, high-resolution{" "}
-            <b>3D topography</b>, and <b>Gemini 1.5 Pro vision analysis</b>
-            to map the invisible micro-climates of Kuala Lumpur with
-            street-level precision.
+            <b>3D topography</b>, and{" "}
+            <b>Gemini 2.5 Flash Lite vision analysis</b> to map the invisible
+            micro-climates of Kuala Lumpur with street-level precision.
           </p>
           <div className="mt-12 flex gap-12">
             <div>
