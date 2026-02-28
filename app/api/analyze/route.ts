@@ -1,16 +1,26 @@
 // app/api/analyze/route.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
+import { logApiMetric } from "@/utils/serverMetrics";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
+  const startedAt = Date.now();
+
   try {
     const { lat, lng, locationName } = await req.json();
 
     const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!MAPS_KEY) {
       console.error("Missing Google Maps API key");
+      logApiMetric({
+        route: "/api/analyze",
+        status: 500,
+        success: false,
+        durationMs: Date.now() - startedAt,
+        extra: { reason: "missing_maps_key" },
+      });
       return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
     }
 
@@ -53,6 +63,13 @@ export async function POST(req: Request) {
     const streetViewLocation = await findStreetViewLocation();
     if (!streetViewLocation) {
       console.warn("No Street View imagery found");
+      logApiMetric({
+        route: "/api/analyze",
+        status: 404,
+        success: false,
+        durationMs: Date.now() - startedAt,
+        extra: { reason: "street_view_not_found" },
+      });
       return NextResponse.json({ error: "No Street View imagery found" }, { status: 404 });
     }
 
@@ -63,12 +80,26 @@ export async function POST(req: Request) {
       const imageResp = await fetch(streetViewUrl);
       if (!imageResp.ok) {
         console.error("Failed to fetch Street View image");
+        logApiMetric({
+          route: "/api/analyze",
+          status: 500,
+          success: false,
+          durationMs: Date.now() - startedAt,
+          extra: { reason: "street_view_image_fetch_failed" },
+        });
         return NextResponse.json({ error: "Failed to fetch Street View image" }, { status: 500 });
       }
       const buffer = await imageResp.arrayBuffer();
       base64Image = Buffer.from(buffer).toString("base64");
     } catch (err) {
       console.error("Error fetching Street View image:", err);
+      logApiMetric({
+        route: "/api/analyze",
+        status: 500,
+        success: false,
+        durationMs: Date.now() - startedAt,
+        extra: { reason: "street_view_image_exception" },
+      });
       return NextResponse.json({ error: "Failed to fetch Street View image" }, { status: 500 });
     }
 
@@ -82,6 +113,13 @@ export async function POST(req: Request) {
       aiResponseText = result.response.text();
     } catch (err) {
       console.error("Error calling Gemini API:", err);
+      logApiMetric({
+        route: "/api/analyze",
+        status: 500,
+        success: false,
+        durationMs: Date.now() - startedAt,
+        extra: { reason: "gemini_failed" },
+      });
       return NextResponse.json({ error: "AI model failed" }, { status: 500 });
     }
 
@@ -92,10 +130,25 @@ export async function POST(req: Request) {
       data = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
     } catch (err) {
       console.error("Failed to parse AI response:", aiResponseText, err);
+      logApiMetric({
+        route: "/api/analyze",
+        status: 500,
+        success: false,
+        durationMs: Date.now() - startedAt,
+        extra: { reason: "invalid_ai_json" },
+      });
       return NextResponse.json({ error: "Invalid AI response" }, { status: 500 });
     }
 
     // Return final JSON with fallbacks
+    logApiMetric({
+      route: "/api/analyze",
+      status: 200,
+      success: true,
+      durationMs: Date.now() - startedAt,
+      extra: { locationName },
+    });
+
     return NextResponse.json({
       walkabilityScore: data.walkabilityScore ?? data.walkability_score ?? 20,
       shadeScore: data.shadeScore ?? data.shade_score ?? 20,
@@ -105,6 +158,13 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("Unexpected error in /analyze route:", error);
+    logApiMetric({
+      route: "/api/analyze",
+      status: 500,
+      success: false,
+      durationMs: Date.now() - startedAt,
+      extra: { reason: "unexpected_error" },
+    });
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }

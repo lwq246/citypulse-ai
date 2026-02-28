@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { logApiMetric } from "@/utils/serverMetrics";
 
 export async function POST(req: Request) {
+  const startedAt = Date.now();
+
   try {
     const { lat, lng } = await req.json();
     const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -40,6 +43,13 @@ export async function POST(req: Request) {
 
     if (!elevData.results || elevData.results.length === 0) {
       console.warn("No elevation data returned.");
+      logApiMetric({
+        route: "/api/flood-grid",
+        status: 200,
+        success: true,
+        durationMs: Date.now() - startedAt,
+        extra: { pointCount: 0 },
+      });
       return NextResponse.json([]);
     }
 
@@ -56,9 +66,24 @@ export async function POST(req: Request) {
     });
 
     // console.log("Flood Final Points:", finalPoints);
+    logApiMetric({
+      route: "/api/flood-grid",
+      status: 200,
+      success: true,
+      durationMs: Date.now() - startedAt,
+      extra: { pointCount: finalPoints.length, rainChance },
+    });
+
     return NextResponse.json(finalPoints); // Return array directly!
 
-  } catch (error) {
+  } catch (error: any) {
+    logApiMetric({
+      route: "/api/flood-grid",
+      status: 500,
+      success: false,
+      durationMs: Date.now() - startedAt,
+      extra: { error: error?.message || "unknown" },
+    });
     return NextResponse.json([]);
   }
 }

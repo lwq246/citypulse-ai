@@ -1,7 +1,10 @@
 // app/api/solar-grid/route.ts
 import { NextResponse } from "next/server";
+import { logApiMetric } from "@/utils/serverMetrics";
 
 export async function POST(req: Request) {
+  const startedAt = Date.now();
+
   try {
     const { lat, lng } = await req.json();
     // Log the request coordinates for the grid scan
@@ -89,9 +92,24 @@ export async function POST(req: Request) {
     // } catch (e) {
     //   console.log("Deep Scan results: (could not stringify results)");
     // }
+    logApiMetric({
+      route: "/api/solar-grid",
+      status: 200,
+      success: true,
+      durationMs: Date.now() - startedAt,
+      extra: { pointCount: finalRealData.length },
+    });
+
     return NextResponse.json(finalRealData);
 
-  } catch (error) {
+  } catch (error: any) {
+    logApiMetric({
+      route: "/api/solar-grid",
+      status: 500,
+      success: false,
+      durationMs: Date.now() - startedAt,
+      extra: { error: error?.message || "unknown" },
+    });
     return NextResponse.json([]);
   }
 }

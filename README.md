@@ -100,7 +100,8 @@ Empowers city councils to prioritize urban greening (tree planting and cooling c
 
 ## 🧪 3. Feedback, Testing & Iteration
 
-Conducted usability testing with **5 university students and local residents** using the **“Think Aloud” protocol**.
+Conducted usability testing with **3
+university students and local residents** using the **“Think Aloud” protocol**.
 
 ### 🎨 Feedback: Visual Overload
 

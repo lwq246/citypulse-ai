@@ -6,10 +6,21 @@ import MapControls from "@/components/MapControls";
 import SearchBar from "@/components/SearchBar";
 import Sidebar from "@/components/Sidebar";
 import StatusWidgets from "@/components/StatusWidgets";
+import { trackEvent } from "@/utils/analytics";
 import { AnimatePresence } from "framer-motion";
 import { ArrowLeft, LocateFixed } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+type LocationUpdateSource =
+  | "map"
+  | "search"
+  | "geolocation"
+  | "locate_me"
+  | "unknown";
+
+const roundCoord = (value: number) => Number(value.toFixed(5));
+
 export default function Dashboard() {
   const [activeLayer, setActiveLayer] = useState("thermal");
 
@@ -48,13 +59,38 @@ export default function Dashboard() {
   const [aiResult, setAiResult] = useState<any>(null);
 
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const lastLocationSourceRef = useRef<LocationUpdateSource>("unknown");
 
-  const updateTargetLocation = useCallback(
-    (location: { lat: number; lng: number; name: string }) => {
+  const applyTargetLocation = useCallback(
+    (
+      location: { lat: number; lng: number; name: string },
+      source: LocationUpdateSource,
+    ) => {
+      lastLocationSourceRef.current = source;
       setTargetLocation(location);
       setAiResult(null);
+
+      trackEvent("location_update", {
+        source,
+        lat: roundCoord(location.lat),
+        lng: roundCoord(location.lng),
+      });
     },
     [],
+  );
+
+  const handleMapLocationUpdate = useCallback(
+    (location: { lat: number; lng: number; name: string }) => {
+      applyTargetLocation(location, "map");
+    },
+    [applyTargetLocation],
+  );
+
+  const handleSearchLocationSelect = useCallback(
+    (location: { lat: number; lng: number; name: string }) => {
+      applyTargetLocation(location, "search");
+    },
+    [applyTargetLocation],
   );
 
   // --- DATA FETCHING ENGINE ---
@@ -78,8 +114,10 @@ export default function Dashboard() {
         windspeed: data.windspeed || 0,
         weathercode: data.weathercode || 0,
       });
+      return true;
     } catch (error) {
       console.error("Failed to fetch environmental data:", error);
+      return false;
     }
   };
 
@@ -100,8 +138,10 @@ export default function Dashboard() {
         potential: data.potential,
         source: data.source,
       });
+      return true;
     } catch (e) {
       console.error("Solar Fetch Error", e);
+      return false;
     }
   };
 
@@ -113,8 +153,10 @@ export default function Dashboard() {
       });
       const data = await res.json();
       setFloodData(data);
+      return true;
     } catch (e) {
       console.error("Flood API Error", e);
+      return false;
     }
   };
 
@@ -125,11 +167,14 @@ export default function Dashboard() {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          updateTargetLocation({
+          applyTargetLocation(
+            {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
             name: "My Current Position",
-          });
+            },
+            "geolocation",
+          );
         },
         (error) => {
           if (error.code === error.PERMISSION_DENIED) {
@@ -142,17 +187,58 @@ export default function Dashboard() {
         },
       );
     }
-  }, [updateTargetLocation]);
+  }, [applyTargetLocation]);
 
   // Effect 2: Unified Data Trigger
   // This ensures that whenever 'targetLocation' updates, ALL data layers refresh
   useEffect(() => {
-    if (targetLocation.lat && targetLocation.lng) {
-      fetchEnvironmentalData(targetLocation.lat, targetLocation.lng);
-      fetchSolarInsights(targetLocation.lat, targetLocation.lng);
-      fetchFloodData(targetLocation.lat, targetLocation.lng); // <--- ADD THIS
-    }
+    let cancelled = false;
+
+    const runRefresh = async () => {
+      if (!targetLocation.lat || !targetLocation.lng) return;
+
+      const start = performance.now();
+      const source = lastLocationSourceRef.current;
+
+      const [envOk, solarOk, floodOk] = await Promise.all([
+        fetchEnvironmentalData(targetLocation.lat, targetLocation.lng),
+        fetchSolarInsights(targetLocation.lat, targetLocation.lng),
+        fetchFloodData(targetLocation.lat, targetLocation.lng),
+      ]);
+
+      if (cancelled) return;
+
+      const durationMs = Math.round(performance.now() - start);
+      const successCount = [envOk, solarOk, floodOk].filter(Boolean).length;
+
+      trackEvent("layer_data_refresh", {
+        source,
+        duration_ms: durationMs,
+        success_count: successCount,
+        lat: roundCoord(targetLocation.lat),
+        lng: roundCoord(targetLocation.lng),
+      });
+    };
+
+    runRefresh();
+
+    return () => {
+      cancelled = true;
+    };
   }, [targetLocation]);
+
+  useEffect(() => {
+    trackEvent("layer_switch", { layer: activeLayer });
+  }, [activeLayer]);
+
+  useEffect(() => {
+    if (!aiResult) return;
+
+    trackEvent("analysis_report_viewed", {
+      layer: activeLayer,
+      location: targetLocation.name,
+    });
+  }, [aiResult, activeLayer, targetLocation.name]);
 
   // --- MAP CONTROL FUNCTIONS ---
 
@@ -160,11 +246,14 @@ export default function Dashboard() {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          updateTargetLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            name: "My Location",
-          });
+          applyTargetLocation(
+            {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              name: "My Location",
+            },
+            "locate_me",
+          );
         },
         (error) => {
           if (error.code === error.PERMISSION_DENIED) {
@@ -219,6 +308,15 @@ export default function Dashboard() {
 
   const runAIAnalysis = async () => {
     setIsAnalyzing(true);
+    const startedAt = performance.now();
+
+    trackEvent("analyze_start", {
+      layer: activeLayer,
+      location: targetLocation.name,
+      lat: roundCoord(targetLocation.lat),
+      lng: roundCoord(targetLocation.lng),
+    });
+
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
@@ -228,10 +326,22 @@ export default function Dashboard() {
           locationName: targetLocation.name,
         }),
       });
+      if (!res.ok) {
+        throw new Error(`Analyze API error: ${res.status}`);
+      }
       const data = await res.json();
       setAiResult(data);
+
+      trackEvent("analyze_success", {
+        duration_ms: Math.round(performance.now() - startedAt),
+        layer: activeLayer,
+      });
     } catch (e) {
       console.error("AI Error", e);
+      trackEvent("analyze_fail", {
+        duration_ms: Math.round(performance.now() - startedAt),
+        layer: activeLayer,
+      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -245,7 +355,7 @@ export default function Dashboard() {
           activeLayer={activeLayer}
           targetLocation={targetLocation}
           envData={envData} // <--- PASS THIS
-          onMapClick={updateTargetLocation}
+          onMapClick={handleMapLocationUpdate}
           onMapLoad={(map) => {
             mapInstanceRef.current = map;
           }}
@@ -267,7 +377,7 @@ export default function Dashboard() {
         </div>
 
         <div className="flex-1 flex justify-center pointer-events-auto px-4">
-          <SearchBar onLocationSelect={updateTargetLocation} />
+          <SearchBar onLocationSelect={handleSearchLocationSelect} />
         </div>
 
         <div className="flex flex-col items-end gap-4 pointer-events-auto">
