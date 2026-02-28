@@ -20,6 +20,52 @@ export default function MapBox({
   onMapClick,
   onMapLoad,
 }: MapBoxProps) {
+  const logGraphicsAccelerationGuidance = () => {
+    if (typeof window === "undefined") return;
+
+    const testCanvas = document.createElement("canvas");
+    const webglContext =
+      testCanvas.getContext("webgl2") ||
+      testCanvas.getContext("webgl") ||
+      testCanvas.getContext("experimental-webgl");
+
+    if (!webglContext) {
+      console.error(
+        "[CityPulse Maps] WebGL is unavailable in this browser session. " +
+          'Ensure "Use graphics acceleration when available" is ON. ' +
+          "Then fully restart the browser and check chrome://gpu.",
+      );
+      console.info(
+        "[CityPulse Maps] Troubleshooting steps: 1) chrome://settings/system -> enable hardware acceleration, " +
+          "2) restart browser, 3) verify WebGL is Hardware accelerated in chrome://gpu.",
+      );
+    }
+  };
+
+  const logMapCapabilityGuidance = (map: google.maps.Map) => {
+    try {
+      const capabilities = (map as any).getMapCapabilities?.();
+      const renderingType = (map as any).getRenderingType?.();
+      const webglOverlayAvailable = capabilities?.isWebGLOverlayViewAvailable;
+
+      if (renderingType && renderingType !== "VECTOR") {
+        console.warn(
+          "[CityPulse Maps] Vector map is not active; browser/project fell back to raster. " +
+            'Ensure "Use graphics acceleration when available" is ON and your mapId is a cloud-based vector style.',
+        );
+      }
+
+      if (webglOverlayAvailable === false) {
+        console.warn(
+          "[CityPulse Maps] WebGLOverlayView is unavailable for this map instance. " +
+            'Ensure "Use graphics acceleration when available" is ON.',
+        );
+      }
+    } catch (error) {
+      console.warn("[CityPulse Maps] Unable to inspect map capabilities:", error);
+    }
+  };
+
   const GRID_SPREAD = 0.015;
   const GRID_STEP = GRID_SPREAD / 10;
   const GRID_JITTER = GRID_STEP * 0.4;
@@ -201,6 +247,8 @@ export default function MapBox({
   // 2. INITIALIZE MAP & OVERLAY
   useEffect(() => {
     const initMap = async () => {
+      logGraphicsAccelerationGuidance();
+
       setOptions({
         key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
         version: "3.58", // Use a stable version to prevent breaking changes
@@ -230,6 +278,11 @@ export default function MapBox({
           });
 
           mapInstanceRef.current = instance;
+
+          logMapCapabilityGuidance(instance);
+          instance.addListener("mapcapabilities_changed", () => {
+            logMapCapabilityGuidance(instance);
+          });
 
           // Throttled Zoom Listener
           instance.addListener("zoom_changed", () => {
