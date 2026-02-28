@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Loader2, X, Leaf, Target, TrendingUp } from 'lucide-react';
-import { useCallback, useMemo, useEffect, useState } from 'react';
-import type { UrbanReportJSON, MetricData } from '@/types/urbanReport';
-import { generateReportPDF } from '@/utils/reportPDF';
+import type { MetricData, UrbanReportJSON } from "@/types/urbanReport";
+import { generateReportPDF } from "@/utils/reportPDF";
+import { AnimatePresence, motion } from "framer-motion";
+import { Download, Leaf, Loader2, Target, TrendingUp, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UrbanReportModalProps {
   isOpen: boolean;
@@ -20,20 +20,20 @@ export default function UrbanReportModal({
   isLoading,
 }: UrbanReportModalProps) {
   // State to hold the safely formatted date strings
-  const [formattedDate, setFormattedDate] = useState<string>('');
+  const [formattedDate, setFormattedDate] = useState<string>("");
 
   // Handle proper localized date formatting to prevent hydration mismatch
   useEffect(() => {
     if (report?.generated_at) {
       try {
         const date = new Date(report.generated_at);
-        const formatted = new Intl.DateTimeFormat('en-MY', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZoneName: 'short',
+        const formatted = new Intl.DateTimeFormat("en-MY", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZoneName: "short",
         }).format(date);
         setFormattedDate(formatted);
       } catch (error) {
@@ -45,24 +45,24 @@ export default function UrbanReportModal({
 
   const getStatusColor = (status: string) => {
     const colorMap: Record<string, string> = {
-      Excellent: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      Good: 'bg-green-100 text-green-800 border-green-200',
-      Moderate: 'bg-amber-100 text-amber-800 border-amber-200',
-      Poor: 'bg-orange-100 text-orange-800 border-orange-200',
-      Critical: 'bg-red-100 text-red-800 border-red-200',
+      Excellent: "bg-emerald-100 text-emerald-800 border-emerald-200",
+      Good: "bg-green-100 text-green-800 border-green-200",
+      Moderate: "bg-amber-100 text-amber-800 border-amber-200",
+      Poor: "bg-orange-100 text-orange-800 border-orange-200",
+      Critical: "bg-red-100 text-red-800 border-red-200",
     };
-    return colorMap[status] || colorMap['Moderate'];
+    return colorMap[status] || colorMap["Moderate"];
   };
 
   const getProgressColor = (status: string) => {
     const colorMap: Record<string, string> = {
-      Excellent: 'bg-emerald-500',
-      Good: 'bg-green-500',
-      Moderate: 'bg-amber-500',
-      Poor: 'bg-orange-500',
-      Critical: 'bg-red-500',
+      Excellent: "bg-emerald-500",
+      Good: "bg-green-500",
+      Moderate: "bg-amber-500",
+      Poor: "bg-orange-500",
+      Critical: "bg-red-500",
     };
-    return colorMap[status] || colorMap['Moderate'];
+    return colorMap[status] || colorMap["Moderate"];
   };
 
   const handleDownloadPDF = useCallback(() => {
@@ -103,7 +103,7 @@ export default function UrbanReportModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 pointer-events-none"
           >
             <div className="w-full max-w-5xl max-h-[90vh] bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col pointer-events-auto border border-gray-100">
@@ -155,7 +155,7 @@ export default function UrbanReportModal({
                           {report.location_name}
                         </h3>
                         <p className="text-sm text-gray-400 font-mono mb-6">
-                          Generated on {formattedDate || 'Loading date...'}
+                          Generated on {formattedDate || "Loading date..."}
                         </p>
                         <div className="prose prose-sm sm:prose-base text-gray-600 leading-relaxed">
                           <p className="text-lg font-medium text-gray-800 mb-2">
@@ -229,20 +229,20 @@ export default function UrbanReportModal({
                         {sortedMetrics.map(
                           (metric: MetricData, index: number) => {
                             const isCritical =
-                              metric.status === 'Critical' ||
-                              metric.status === 'Poor';
+                              metric.status === "Critical" ||
+                              metric.status === "Poor";
 
                             // Check if value is numeric
                             const isNumeric =
-                              typeof metric.value === 'number' &&
+                              typeof metric.value === "number" &&
                               !isNaN(metric.value);
 
                             // Calculate progress bar only for numeric values
                             let percentage = 0;
                             if (isNumeric) {
-                              const maxVal = metric.unit.includes('°C')
+                              const maxVal = metric.unit.includes("°C")
                                 ? 50
-                                : metric.unit.includes('AQI')
+                                : metric.unit.includes("AQI")
                                   ? 500
                                   : 100;
                               percentage = Math.min(
@@ -274,7 +274,7 @@ export default function UrbanReportModal({
                                 {/* Value Display */}
                                 <div className="flex items-baseline gap-1 mb-4">
                                   <span
-                                    className={`text-3xl font-black tracking-tighter ${isCritical ? 'text-red-500' : 'text-gray-900'}`}
+                                    className={`text-3xl font-black tracking-tighter ${isCritical ? "text-red-500" : "text-gray-900"}`}
                                   >
                                     {metric.value}
                                   </span>
@@ -292,7 +292,7 @@ export default function UrbanReportModal({
                                       transition={{
                                         duration: 1,
                                         delay: 0.2 + index * 0.1,
-                                        ease: 'easeOut',
+                                        ease: "easeOut",
                                       }}
                                       className={`h-full ${getProgressColor(metric.status)} rounded-full`}
                                     />

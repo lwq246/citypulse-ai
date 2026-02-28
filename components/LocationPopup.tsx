@@ -3,7 +3,6 @@ import {
   Activity,
   Droplets,
   Loader2,
-  Maximize2,
   Thermometer,
   Waves,
   Wind,
@@ -166,11 +165,11 @@ export default function LocationPopup({
       </div>
 
       {/* REFINED BUTTONS */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex justify-center">
         <button
           onClick={onAnalyze}
           disabled={isAnalyzing}
-          className="text-[#0B1211] text-[9px] font-black py-2 rounded-md hover:brightness-110 active:scale-95 transition-all uppercase tracking-tighter shadow-lg flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-[#0B1211] text-[9px] font-black py-2 px-4 rounded-md hover:brightness-110 active:scale-95 transition-all uppercase tracking-tighter shadow-lg flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ backgroundColor: accentColor }}
         >
           {isAnalyzing ? (
@@ -181,13 +180,6 @@ export default function LocationPopup({
           ) : (
             "Analyze"
           )}
-        </button>
-        <button
-          onClick={openStreetView}
-          className="bg-white/5 border border-white/10 text-white text-[9px] font-bold py-2 rounded-md hover:bg-white/10 active:scale-95 transition-all uppercase tracking-tighter flex items-center justify-center gap-1 cursor-pointer"
-        >
-          <Maximize2 size={10} />
-          View 360°
         </button>
       </div>
     </div>
