@@ -76,7 +76,7 @@ $$W_{flood} = (H_{max} - H_{point})^2 \times \left(1 + \frac{P_{rain}}{50}\right
 ### 🧠 Multimodal AI Audit (SDG 3)
 
 - Combines **Google Street View Static API**
-- Processes imagery using **Gemini 1.5 Pro**
+- Processes imagery using **Gemini 2.5 Flash Lite**
 - AI analyzes urban fabric (walkability, shading, density, infrastructure condition)
 - Outputs a structured environmental & safety scorecard
 

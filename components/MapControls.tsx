@@ -67,7 +67,7 @@ export default function MapControls({
           className="group-hover:rotate-180 transition-transform duration-500"
         />
         <span className="text-xs font-bold uppercase tracking-widest">
-          Reset N
+          Reset
         </span>
       </button>
     </div>
